@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Expense Automation
 
-## Getting Started
+Personal expense tracker with a web dashboard, Telegram logging, AI insights, and automated monthly PDF reports.
 
-First, run the development server:
+## Features
+
+- **7 categories** tailored for living at home with parents:
+  - Ordering / Dining Out
+  - Tea, Coffee & Snacks
+  - Investments (tracked separately from spending)
+  - Entertainment
+  - Fuel / Transport
+  - Clothing & Accessories
+  - Miscellaneous
+- **Telegram bot** — log expenses in natural language (`120 lunch zomato`, `tea 40`, `fuel 2500`)
+- **Commands**: `today`, `this week`, `undo`, `help`
+- **Web dashboard** — charts, monthly totals, expense list, budgets
+- **AI insights** — month-over-month analysis and budget alerts
+- **Monthly PDF report** — auto-sent to Telegram on the 1st of each month
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- Supabase (PostgreSQL)
+- OpenAI (parsing + insights)
+- Telegram Bot API
+- Recharts + jsPDF
+
+## Quick Start
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set up Supabase
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run the SQL in `supabase/migrations/001_initial.sql` in the SQL Editor
+3. Copy your project URL and API keys
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in all values in `.env.local` (see `.env.example` for details).
+
+### 4. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 5. Set up Telegram webhook
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For local dev, use [ngrok](https://ngrok.com) to expose port 3000, then:
 
-## Learn More
+```bash
+# Set APP_URL=https://your-ngrok-url.ngrok.io in .env.local
+curl http://localhost:3000/api/telegram/setup
+```
 
-To learn more about Next.js, take a look at the following resources:
+Or manually:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://your-domain.com/api/telegram/webhook","secret_token":"your-secret"}'
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Telegram Usage
 
-## Deploy on Vercel
+| Message | Action |
+|---------|--------|
+| `120 lunch zomato` | Log ₹120 under Ordering/Dining |
+| `tea 40` | Log ₹40 under Tea, Coffee & Snacks |
+| `sip 5000 groww` | Log under Investments |
+| `today` | Today's spending summary |
+| `this week` | Weekly summary |
+| `undo` | Delete last entry |
+| `help` | Show commands |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy to Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push to GitHub
+2. Import in Vercel
+3. Add all environment variables
+4. Deploy
+5. Visit `/api/telegram/setup` to register webhook
+6. Vercel Cron runs monthly report on the 1st at 6:00 UTC (configure in `vercel.json`)
+
+### Manual monthly report
+
+```bash
+curl -H "Authorization: Bearer <CRON_SECRET>" \
+  "https://your-domain.com/api/cron/monthly-report?month=2026-06"
+```
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── page.tsx              # Dashboard
+│   ├── expenses/page.tsx     # Expense list
+│   ├── budgets/page.tsx      # Budget management
+│   └── api/
+│       ├── telegram/webhook  # Telegram bot
+│       ├── cron/monthly-report
+│       ├── expenses/
+│       ├── budgets/
+│       └── insights/
+├── components/
+└── lib/
+    ├── categories.ts
+    ├── expenses.ts
+    ├── ai.ts
+    ├── telegram.ts
+    └── pdf.ts
+```
+
+## Categories
+
+Investments are **not** counted in "Total Spent" — they appear separately so you can see both spending and allocation.
