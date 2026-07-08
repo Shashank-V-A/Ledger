@@ -1,50 +1,85 @@
 import { CATEGORY_LIST } from "@/lib/categories";
 import { addExpenseAction } from "@/app/actions";
+import { Plus } from "lucide-react";
 
-export function AddExpenseForm() {
+export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <form action={addExpenseAction} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      <input
-        name="amount"
-        type="number"
-        min="1"
-        step="0.01"
-        required
-        placeholder="Amount (₹)"
-        className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white"
-      />
-      <select
-        name="category"
-        required
-        className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white"
-        defaultValue="food_small"
-      >
-        {CATEGORY_LIST.map((cat) => (
-          <option key={cat.id} value={cat.id}>
-            {cat.label}
-          </option>
-        ))}
-      </select>
-      <input
-        name="description"
-        type="text"
-        placeholder="Description"
-        className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white"
-      />
-      <input
-        name="expense_date"
-        type="date"
-        defaultValue={today}
-        className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white"
-      />
-      <button
-        type="submit"
-        className="rounded-lg bg-emerald-500 px-4 py-2 font-medium text-slate-950 hover:bg-emerald-400"
-      >
-        Add Expense
-      </button>
+    <form
+      action={addExpenseAction}
+      className={
+        compact
+          ? "flex flex-wrap items-end gap-3"
+          : "grid gap-3 sm:grid-cols-2 lg:grid-cols-12"
+      }
+    >
+      <div className={compact ? "" : "lg:col-span-2"}>
+        {!compact && (
+          <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
+            Amount
+          </label>
+        )}
+        <input
+          name="amount"
+          type="number"
+          min="1"
+          step="0.01"
+          required
+          placeholder="₹ 0"
+          className="field"
+        />
+      </div>
+
+      <div className={compact ? "min-w-[160px]" : "lg:col-span-3"}>
+        {!compact && (
+          <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
+            Category
+          </label>
+        )}
+        <select name="category" required className="field" defaultValue="food_small">
+          {CATEGORY_LIST.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className={compact ? "flex-1 min-w-[140px]" : "lg:col-span-3"}>
+        {!compact && (
+          <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
+            Description
+          </label>
+        )}
+        <input
+          name="description"
+          type="text"
+          placeholder="What was it for?"
+          className="field"
+        />
+      </div>
+
+      <div className={compact ? "" : "lg:col-span-2"}>
+        {!compact && (
+          <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
+            Date
+          </label>
+        )}
+        <input
+          name="expense_date"
+          type="date"
+          defaultValue={today}
+          className="field"
+        />
+      </div>
+
+      <div className={compact ? "" : "lg:col-span-2 flex items-end"}>
+        <button type="submit" className="btn-primary w-full">
+          <Plus className="h-4 w-4" />
+          Add
+        </button>
+      </div>
     </form>
   );
 }

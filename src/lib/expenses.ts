@@ -2,6 +2,7 @@ import {
   CATEGORIES,
   type CategoryId,
   SPENDING_CATEGORIES,
+  normalizeCategory,
 } from "@/lib/categories";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { CategorySummary, Expense, MonthlySummary } from "@/types";
@@ -144,11 +145,12 @@ function summarizeExpenses(expenses: Expense[]): MonthlySummary {
   let totalInvested = 0;
 
   for (const expense of expenses) {
-    const entry = byCategoryMap.get(expense.category)!;
+    const category = normalizeCategory(expense.category);
+    const entry = byCategoryMap.get(category)!;
     entry.total += Number(expense.amount);
     entry.count += 1;
 
-    if (CATEGORIES[expense.category].isInvestment) {
+    if (CATEGORIES[category].isInvestment) {
       totalInvested += Number(expense.amount);
     } else {
       totalSpent += Number(expense.amount);

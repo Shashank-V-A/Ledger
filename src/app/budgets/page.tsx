@@ -1,8 +1,11 @@
 import { getBudgets, getMonthlySummary } from "@/lib/expenses";
 import { BudgetForm } from "@/components/BudgetForm";
-import { formatCurrency, SPENDING_CATEGORIES } from "@/lib/categories";
-import { formatMonthLabel } from "@/lib/date-utils";
-import { MonthPicker } from "@/components/MonthPicker";
+import {
+  formatCurrency,
+  getCategoryColor,
+  SPENDING_CATEGORIES,
+} from "@/lib/categories";
+import { PageHeader } from "@/components/PageHeader";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
@@ -24,60 +27,82 @@ async function BudgetsContent({ month }: { month: string }) {
 
   return (
     <>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Budgets</h1>
-          <p className="text-slate-400">Set monthly limits and track overruns for {formatMonthLabel(month)}</p>
-        </div>
-        <MonthPicker month={month} />
-      </div>
+      <PageHeader
+        month={month}
+        title="Budgets"
+        subtitle="Monthly spending limits"
+      />
 
-      <section className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="mb-6 grid gap-3 sm:grid-cols-2 animate-fade-up">
         {SPENDING_CATEGORIES.map((cat) => {
           const limit = existing[cat.id];
           const spent = spentByCategory.get(cat.id) ?? 0;
           const pct = limit ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
           const over = limit && spent > limit;
+          const color = getCategoryColor(cat.id);
 
           return (
-            <div
-              key={cat.id}
-              className="rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-            >
-              <p className="text-sm text-slate-400">{cat.label}</p>
-              <p className="mt-1 text-xl font-semibold text-white">
-                {formatCurrency(spent)}
-                {limit ? (
-                  <span className="text-sm font-normal text-slate-500">
-                    {" "}/ {formatCurrency(limit)}
-                  </span>
-                ) : null}
-              </p>
+            <div key={cat.id} className="panel p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0 mt-1"
+                    style={{ background: color }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text)]">{cat.label}</p>
+                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                      {limit ? `${pct}% of budget` : "No limit set"}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="stat-value text-xl text-[var(--text)]">
+                    {formatCurrency(spent)}
+                  </p>
+                  {limit ? (
+                    <p className="text-xs text-[var(--text-muted)]">
+                      of {formatCurrency(limit)}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
               {limit ? (
-                <div className="mt-3">
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                <div className="mt-4">
+                  <div className="h-1 overflow-hidden rounded-full bg-[var(--bg-hover)]">
                     <div
-                      className={`h-full rounded-full ${over ? "bg-red-400" : "bg-emerald-400"}`}
-                      style={{ width: `${pct}%` }}
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${pct}%`,
+                        background: over ? "var(--negative)" : color,
+                      }}
                     />
                   </div>
-                  <p className={`mt-1 text-xs ${over ? "text-red-300" : "text-slate-500"}`}>
-                    {over
-                      ? `Over by ${formatCurrency(spent - limit)}`
-                      : `${pct}% used`}
-                  </p>
+                  {over && (
+                    <p className="mt-2 text-xs text-[var(--negative)]">
+                      Over by {formatCurrency(spent - limit)}
+                    </p>
+                  )}
                 </div>
               ) : (
-                <p className="mt-2 text-xs text-slate-500">No budget set</p>
+                <div className="mt-4 h-1 rounded-full bg-[var(--bg-hover)]" />
               )}
             </div>
           );
         })}
       </section>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-        <h2 className="mb-4 text-lg font-semibold text-white">Set Budget Limits</h2>
-        <BudgetForm existing={existing} />
+      <section className="panel animate-fade-up" style={{ animationDelay: "0.05s" }}>
+        <div className="panel-header">
+          <h2 className="text-sm font-medium text-[var(--text)]">Set limits</h2>
+          <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+            Investments are tracked separately
+          </p>
+        </div>
+        <div className="panel-body">
+          <BudgetForm existing={existing} />
+        </div>
       </section>
     </>
   );
@@ -92,7 +117,13 @@ export default async function BudgetsPage({
   const month = params.month ?? new Date().toISOString().slice(0, 7);
 
   return (
-    <Suspense fallback={<p className="text-slate-400">Loading budgets...</p>}>
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center text-sm text-[var(--text-muted)]">
+          Loading…
+        </div>
+      }
+    >
       <BudgetsContent month={month} />
     </Suspense>
   );

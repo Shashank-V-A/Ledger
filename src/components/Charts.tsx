@@ -1,61 +1,86 @@
 "use client";
 
 import {
-  CATEGORIES,
   formatCurrency,
+  getCategoryColor,
   getCategoryLabel,
 } from "@/lib/categories";
+import { CATEGORIES } from "@/lib/categories";
 import type { CategorySummary } from "@/types";
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
-export function CategoryPieChart({ data }: { data: CategorySummary[] }) {
-  const chartData = data
-    .filter((d) => d.total > 0 && !CATEGORIES[d.category].isInvestment)
-    .map((d) => ({
-      name: getCategoryLabel(d.category),
-      value: d.total,
-      color: CATEGORIES[d.category].color,
-    }));
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  if (!chartData.length) {
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-[var(--border-strong)] bg-[var(--bg-card)] px-3 py-2 text-xs shadow-xl">
+      <p className="text-[var(--text-muted)]">{label}</p>
+      <p className="mt-0.5 font-semibold text-[var(--text)]">
+        {formatCurrency(payload[0].value)}
+      </p>
+    </div>
+  );
+}
+
+export function CategoryBreakdown({ data }: { data: CategorySummary[] }) {
+  const items = data
+    .filter((d) => d.total > 0 && !CATEGORIES[d.category as keyof typeof CATEGORIES]?.isInvestment)
+    .sort((a, b) => b.total - a.total);
+
+  const total = items.reduce((s, i) => s + i.total, 0);
+
+  if (!items.length) {
     return (
-      <div className="flex h-64 items-center justify-center text-slate-500">
-        No spending data yet
+      <div className="flex h-48 items-center justify-center text-sm text-[var(--text-muted)]">
+        No spending recorded yet
       </div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <PieChart>
-        <Pie
-          data={chartData}
-          dataKey="value"
-          nameKey="name"
-          cx="50%"
-          cy="50%"
-          innerRadius={60}
-          outerRadius={100}
-          paddingAngle={2}
-        >
-          {chartData.map((entry) => (
-            <Cell key={entry.name} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="space-y-4">
+      {items.map((item) => {
+        const pct = total ? Math.round((item.total / total) * 100) : 0;
+        const color = getCategoryColor(item.category);
+        return (
+          <div key={item.category}>
+            <div className="mb-1.5 flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2 text-[var(--text-secondary)]">
+                <span className="category-dot" style={{ background: color }} />
+                {getCategoryLabel(item.category)}
+              </span>
+              <span className="font-medium text-[var(--text)]">
+                {formatCurrency(item.total)}
+                <span className="ml-2 text-[var(--text-muted)]">{pct}%</span>
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--bg-hover)]">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: color }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -65,18 +90,48 @@ export function YearlyBarChart({
   data: { month: string; totalSpent: number }[];
 }) {
   const chartData = data.map((d) => ({
-    month: d.month.slice(5),
+    month: MONTHS[parseInt(d.month.slice(5), 10) - 1],
     spent: d.totalSpent,
   }));
 
+  const hasData = chartData.some((d) => d.spent > 0);
+
+  if (!hasData) {
+    return (
+      <div className="flex h-48 items-center justify-center text-sm text-[var(--text-muted)]">
+        No yearly data yet
+      </div>
+    );
+  }
+
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-        <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-        <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(v) => `₹${v / 1000}k`} />
-        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-        <Bar dataKey="spent" fill="#34d399" radius={[4, 4, 0, 0]} />
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={chartData} barSize={20}>
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="rgba(255,255,255,0.04)"
+          vertical={false}
+        />
+        <XAxis
+          dataKey="month"
+          tick={{ fill: "#63636e", fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          tick={{ fill: "#63636e", fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={(v) => (v >= 1000 ? `₹${v / 1000}k` : `₹${v}`)}
+          width={48}
+        />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+        <Bar
+          dataKey="spent"
+          fill="var(--accent-warm)"
+          radius={[4, 4, 0, 0]}
+          opacity={0.85}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

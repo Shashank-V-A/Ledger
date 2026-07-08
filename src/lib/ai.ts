@@ -101,7 +101,7 @@ export async function parseExpenseText(text: string): Promise<ParsedExpense> {
     messages: [
       {
         role: "system",
-        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR. Use food_small for tea/coffee/snacks bought casually. Use food_ordering for restaurant meals, eating outside home, pancakes, lunch/dinner out, zomato/swiggy.`,
+        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR. Use food_small for tea/coffee/snacks. Use food_dining_out for eating at restaurants or outside home. Use food_ordering_in for zomato/swiggy/delivery orders.`,
       },
       { role: "user", content: text },
     ],

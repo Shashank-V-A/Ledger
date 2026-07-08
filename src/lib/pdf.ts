@@ -2,6 +2,7 @@ import {
   CATEGORIES,
   formatCurrency,
   getCategoryLabel,
+  normalizeCategory,
 } from "@/lib/categories";
 import type { AIInsight, Expense, MonthlySummary } from "@/types";
 import { format, parseISO } from "date-fns";
@@ -48,7 +49,7 @@ export function generateMonthlyPdf(input: {
     .sort((a, b) => b.total - a.total)
     .map((c) => [
       getCategoryLabel(c.category),
-      CATEGORIES[c.category].isInvestment ? "Investment" : "Spending",
+      CATEGORIES[normalizeCategory(c.category)].isInvestment ? "Investment" : "Spending",
       formatCurrency(c.total),
       String(c.count),
     ]);

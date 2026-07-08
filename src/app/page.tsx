@@ -8,10 +8,9 @@ import {
   getYearlyData,
 } from "@/lib/expenses";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
-import { CategoryPieChart, YearlyBarChart } from "@/components/Charts";
-import { InsightsList, StatCard } from "@/components/DashboardParts";
-import { formatMonthLabel } from "@/lib/date-utils";
-import { MonthPicker } from "@/components/MonthPicker";
+import { CategoryBreakdown, YearlyBarChart } from "@/components/Charts";
+import { HeroStat, InsightsList, MiniStat } from "@/components/DashboardParts";
+import { PageHeader } from "@/components/PageHeader";
 import { getDaysInMonth, parseISO } from "date-fns";
 import { Suspense } from "react";
 
@@ -61,71 +60,85 @@ async function DashboardContent({ month }: { month: string }) {
     })),
   });
 
-  const spentDiff = previous
-    ? summary.totalSpent - previous.totalSpent
-    : null;
+  const spentDiff = previous ? summary.totalSpent - previous.totalSpent : null;
+  const daysInMonth = getDaysInMonth(parseISO(`${month}-01`));
+  const avgPerDay = summary.totalSpent
+    ? Math.round(summary.totalSpent / daysInMonth)
+    : 0;
 
   return (
     <>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{formatMonthLabel(month)}</h1>
-          <p className="text-slate-400">Track spending, investments, and AI insights</p>
+      <PageHeader
+        month={month}
+        title="Overview"
+        subtitle={`${summary.expenseCount} transactions this month`}
+      />
+
+      {/* Hero stats */}
+      <div className="mb-6 grid gap-4 lg:grid-cols-12 animate-fade-up" style={{ animationDelay: "0.05s" }}>
+        <div className="lg:col-span-7">
+          <HeroStat
+            label="Total spent"
+            value={formatCurrency(summary.totalSpent)}
+            delta={
+              spentDiff !== null
+                ? {
+                    amount: `${spentDiff >= 0 ? "+" : ""}${formatCurrency(spentDiff)}`,
+                    positive: spentDiff > 0,
+                  }
+                : null
+            }
+          />
         </div>
-        <MonthPicker month={month} />
+        <div className="grid grid-cols-2 gap-4 lg:col-span-5">
+          <MiniStat label="Invested" value={formatCurrency(summary.totalInvested)} />
+          <MiniStat label="Daily avg" value={formatCurrency(avgPerDay)} />
+        </div>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Total Spent"
-          value={formatCurrency(summary.totalSpent)}
-          sub={
-            spentDiff !== null
-              ? `${spentDiff >= 0 ? "+" : ""}${formatCurrency(spentDiff)} vs last month`
-              : undefined
-          }
-          accent="text-emerald-300"
-        />
-        <StatCard
-          label="Investments"
-          value={formatCurrency(summary.totalInvested)}
-          accent="text-sky-300"
-        />
-        <StatCard
-          label="Transactions"
-          value={String(summary.expenseCount)}
-        />
-        <StatCard
-          label="Avg per day"
-          value={formatCurrency(
-            summary.totalSpent
-              ? Math.round(
-                  summary.totalSpent / getDaysInMonth(parseISO(`${month}-01`))
-                )
-              : 0
-          )}
-        />
-      </div>
-
-      <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-          <h2 className="mb-4 text-lg font-semibold text-white">Spending by Category</h2>
-          <CategoryPieChart data={summary.byCategory} />
+      {/* Charts row */}
+      <div className="mb-6 grid gap-4 lg:grid-cols-2 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+        <section className="panel">
+          <div className="panel-header">
+            <h2 className="text-sm font-medium text-[var(--text)]">By category</h2>
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">Spending breakdown</p>
+          </div>
+          <div className="panel-body">
+            <CategoryBreakdown data={summary.byCategory} />
+          </div>
         </section>
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-          <h2 className="mb-4 text-lg font-semibold text-white">{year} Overview</h2>
-          <YearlyBarChart data={yearly} />
+
+        <section className="panel">
+          <div className="panel-header">
+            <h2 className="text-sm font-medium text-[var(--text)]">{year} at a glance</h2>
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">Monthly spending trend</p>
+          </div>
+          <div className="panel-body">
+            <YearlyBarChart data={yearly} />
+          </div>
         </section>
       </div>
 
-      <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-        <h2 className="mb-4 text-lg font-semibold text-white">AI Insights</h2>
-        <InsightsList insights={insights} />
+      {/* Insights */}
+      <section className="panel mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+        <div className="panel-header">
+          <h2 className="text-sm font-medium text-[var(--text)]">Insights</h2>
+          <p className="mt-0.5 text-xs text-[var(--text-muted)]">Patterns and suggestions</p>
+        </div>
+        <div className="panel-body">
+          <InsightsList insights={insights} />
+        </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-        <h2 className="mb-4 text-lg font-semibold text-white">Quick Add</h2>
-        <AddExpenseForm />
+      {/* Quick add */}
+      <section className="panel animate-fade-up" style={{ animationDelay: "0.2s" }}>
+        <div className="panel-header">
+          <h2 className="text-sm font-medium text-[var(--text)]">Quick add</h2>
+          <p className="mt-0.5 text-xs text-[var(--text-muted)]">Or log via Telegram anytime</p>
+        </div>
+        <div className="panel-body">
+          <AddExpenseForm />
+        </div>
       </section>
     </>
   );
@@ -140,7 +153,13 @@ export default async function HomePage({
   const month = params.month ?? new Date().toISOString().slice(0, 7);
 
   return (
-    <Suspense fallback={<p className="text-slate-400">Loading dashboard...</p>}>
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center text-sm text-[var(--text-muted)]">
+          Loading…
+        </div>
+      }
+    >
       <DashboardContent month={month} />
     </Suspense>
   );

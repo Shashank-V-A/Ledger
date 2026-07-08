@@ -61,7 +61,7 @@ Commands:
 • undo — delete last entry
 • help — show this message
 
-Categories: Ordering/Dining, Tea & Snacks, Investments, Entertainment, Fuel/Transport, Clothing, Miscellaneous`;
+Categories: Dining Out, Ordering In, Tea & Snacks, Investments, Entertainment, Fuel/Transport, Clothing, Miscellaneous`;
 
 export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void> {
   const message = update.message;

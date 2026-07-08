@@ -1,23 +1,14 @@
 export const CATEGORIES = {
-  food_ordering: {
-    id: "food_ordering",
-    label: "Ordering / Dining Out",
-    color: "#f97316",
+  food_dining_out: {
+    id: "food_dining_out",
+    label: "Dining Out",
+    shortLabel: "Dining",
+    color: "#e85d4c",
     isInvestment: false,
     keywords: [
-      "zomato",
-      "swiggy",
       "restaurant",
       "dining",
       "dining out",
-      "order",
-      "delivery",
-      "pizza",
-      "burger",
-      "biryani",
-      "dominos",
-      "kfc",
-      "mcd",
       "pancake",
       "pancakes",
       "waffle",
@@ -27,11 +18,14 @@ export const CATEGORIES = {
       "outside",
       "eat out",
       "eating out",
+      "lunch out",
+      "dinner out",
+      "breakfast out",
+      "brunch",
+      "meal out",
       "lunch",
       "dinner",
       "breakfast",
-      "brunch",
-      "meal out",
       "hotel",
       "canteen",
       "food court",
@@ -39,10 +33,35 @@ export const CATEGORIES = {
       "take away",
     ],
   },
+  food_ordering_in: {
+    id: "food_ordering_in",
+    label: "Ordering In",
+    shortLabel: "Delivery",
+    color: "#f59e0b",
+    isInvestment: false,
+    keywords: [
+      "zomato",
+      "swiggy",
+      "order",
+      "ordering",
+      "delivery",
+      "deliver",
+      "pizza",
+      "burger",
+      "biryani",
+      "dominos",
+      "kfc",
+      "mcd",
+      "zepto",
+      "blinkit",
+      "instamart",
+    ],
+  },
   food_small: {
     id: "food_small",
     label: "Tea, Coffee & Snacks",
-    color: "#eab308",
+    shortLabel: "Snacks",
+    color: "#d4a853",
     isInvestment: false,
     keywords: [
       "tea",
@@ -60,7 +79,8 @@ export const CATEGORIES = {
   investments: {
     id: "investments",
     label: "Investments",
-    color: "#22c55e",
+    shortLabel: "Invest",
+    color: "#34d399",
     isInvestment: true,
     keywords: [
       "sip",
@@ -78,7 +98,8 @@ export const CATEGORIES = {
   entertainment: {
     id: "entertainment",
     label: "Entertainment",
-    color: "#a855f7",
+    shortLabel: "Fun",
+    color: "#a78bfa",
     isInvestment: false,
     keywords: [
       "movie",
@@ -94,7 +115,8 @@ export const CATEGORIES = {
   fuel_transport: {
     id: "fuel_transport",
     label: "Fuel / Transport",
-    color: "#3b82f6",
+    shortLabel: "Transport",
+    color: "#60a5fa",
     isInvestment: false,
     keywords: [
       "fuel",
@@ -113,7 +135,8 @@ export const CATEGORIES = {
   clothing: {
     id: "clothing",
     label: "Clothing & Accessories",
-    color: "#ec4899",
+    shortLabel: "Clothing",
+    color: "#f472b6",
     isInvestment: false,
     keywords: [
       "clothes",
@@ -134,11 +157,20 @@ export const CATEGORIES = {
   miscellaneous: {
     id: "miscellaneous",
     label: "Miscellaneous",
-    color: "#6b7280",
+    shortLabel: "Other",
+    color: "#71717a",
     isInvestment: false,
     keywords: [],
   },
 } as const;
+
+const LEGACY_CATEGORY_LABELS: Record<string, string> = {
+  food_ordering: "Dining Out",
+};
+
+const LEGACY_CATEGORY_COLORS: Record<string, string> = {
+  food_ordering: "#e85d4c",
+};
 
 export type CategoryId = keyof typeof CATEGORIES;
 
@@ -147,7 +179,19 @@ export const CATEGORY_LIST = Object.values(CATEGORIES);
 export const SPENDING_CATEGORIES = CATEGORY_LIST.filter((c) => !c.isInvestment);
 
 export function getCategoryLabel(id: string): string {
-  return CATEGORIES[id as CategoryId]?.label ?? id;
+  if (id in CATEGORIES) return CATEGORIES[id as CategoryId].label;
+  return LEGACY_CATEGORY_LABELS[id] ?? id;
+}
+
+export function getCategoryColor(id: string): string {
+  if (id in CATEGORIES) return CATEGORIES[id as CategoryId].color;
+  return LEGACY_CATEGORY_COLORS[id] ?? "#71717a";
+}
+
+export function normalizeCategory(id: string): CategoryId {
+  if (id === "food_ordering") return "food_dining_out";
+  if (id in CATEGORIES) return id as CategoryId;
+  return "miscellaneous";
 }
 
 export function isValidCategory(id: string): id is CategoryId {
@@ -160,4 +204,10 @@ export function formatCurrency(amount: number): string {
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+export function formatCurrencyCompact(amount: number): string {
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}k`;
+  return formatCurrency(amount);
 }

@@ -1,8 +1,7 @@
 import { getExpenses } from "@/lib/expenses";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
-import { ExpenseTable } from "@/components/DashboardParts";
-import { formatMonthLabel } from "@/lib/date-utils";
-import { MonthPicker } from "@/components/MonthPicker";
+import { ExpenseList } from "@/components/DashboardParts";
+import { PageHeader } from "@/components/PageHeader";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
@@ -12,21 +11,31 @@ async function ExpensesContent({ month }: { month: string }) {
 
   return (
     <>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Expenses</h1>
-          <p className="text-slate-400">{formatMonthLabel(month)} — {expenses.length} entries</p>
-        </div>
-        <MonthPicker month={month} />
-      </div>
+      <PageHeader
+        month={month}
+        title="Expenses"
+        subtitle={`${expenses.length} ${expenses.length === 1 ? "entry" : "entries"}`}
+      />
 
-      <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-        <h2 className="mb-4 text-lg font-semibold text-white">Add Expense</h2>
-        <AddExpenseForm />
+      <section className="panel mb-6 animate-fade-up">
+        <div className="panel-header flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-medium text-[var(--text)]">New expense</h2>
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">Add manually</p>
+          </div>
+        </div>
+        <div className="panel-body">
+          <AddExpenseForm />
+        </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
-        <ExpenseTable expenses={expenses} />
+      <section className="panel animate-fade-up" style={{ animationDelay: "0.05s" }}>
+        <div className="panel-header">
+          <h2 className="text-sm font-medium text-[var(--text)]">All entries</h2>
+        </div>
+        <div className="panel-body !pt-2">
+          <ExpenseList expenses={expenses} />
+        </div>
       </section>
     </>
   );
@@ -41,7 +50,13 @@ export default async function ExpensesPage({
   const month = params.month ?? new Date().toISOString().slice(0, 7);
 
   return (
-    <Suspense fallback={<p className="text-slate-400">Loading expenses...</p>}>
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center text-sm text-[var(--text-muted)]">
+          Loading…
+        </div>
+      }
+    >
       <ExpensesContent month={month} />
     </Suspense>
   );
