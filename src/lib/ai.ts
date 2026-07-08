@@ -6,8 +6,13 @@ import {
 import type { ParsedExpense } from "@/types";
 import OpenAI from "openai";
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const GROQ_MODEL = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+
+const groq = process.env.GROQ_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: "https://api.groq.com/openai/v1",
+    })
   : null;
 
 function guessCategoryFromKeywords(text: string): CategoryId {
@@ -57,17 +62,17 @@ export async function parseExpenseText(text: string): Promise<ParsedExpense> {
     return ruleResult;
   }
 
-  if (!openai) {
+  if (!groq) {
     if (ruleResult) return ruleResult;
-    throw new Error("Could not parse expense. Set OPENAI_API_KEY for smarter parsing.");
+    throw new Error("Could not parse expense. Set GROQ_API_KEY for smarter parsing.");
   }
 
   const categoryList = Object.entries(CATEGORIES)
     .map(([id, c]) => `- ${id}: ${c.label}`)
     .join("\n");
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+  const response = await groq.chat.completions.create({
+    model: GROQ_MODEL,
     temperature: 0,
     response_format: { type: "json_object" },
     messages: [
@@ -106,12 +111,12 @@ export async function generateInsights(input: {
   budgets: { category: CategoryId; monthly_limit: number }[];
   topExpenses: { description: string; amount: number; category: CategoryId }[];
 }): Promise<{ title: string; detail: string; type: "warning" | "positive" | "neutral" }[]> {
-  if (!openai) {
+  if (!groq) {
     return buildFallbackInsights(input);
   }
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+  const response = await groq.chat.completions.create({
+    model: GROQ_MODEL,
     temperature: 0.3,
     response_format: { type: "json_object" },
     messages: [

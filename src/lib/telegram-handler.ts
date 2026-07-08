@@ -72,14 +72,30 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
   const text = message.text.trim();
 
   if (!isAllowedUser(userId)) {
-    await sendTelegramMessage(chatId, "⛔ Unauthorized. Your Telegram user ID is not whitelisted.");
+    await sendTelegramMessage(
+      chatId,
+      `⛔ Unauthorized. Your Telegram user ID is ${userId}. Ask the admin to add it to TELEGRAM_ALLOWED_USER_IDS.`
+    );
     return;
   }
 
   const lower = text.toLowerCase();
 
-  if (lower === "/start" || lower === "help") {
+  if (lower === "/start") {
+    await sendTelegramMessage(
+      chatId,
+      `${HELP_TEXT}\n\n🆔 Your Telegram ID: ${userId}`
+    );
+    return;
+  }
+
+  if (lower === "help") {
     await sendTelegramMessage(chatId, HELP_TEXT);
+    return;
+  }
+
+  if (lower === "/myid" || lower === "myid") {
+    await sendTelegramMessage(chatId, `🆔 Your Telegram ID: ${userId}`);
     return;
   }
 

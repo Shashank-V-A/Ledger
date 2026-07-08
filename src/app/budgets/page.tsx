@@ -1,7 +1,8 @@
 import { getBudgets, getMonthlySummary } from "@/lib/expenses";
 import { BudgetForm } from "@/components/BudgetForm";
 import { formatCurrency, SPENDING_CATEGORIES } from "@/lib/categories";
-import { formatMonthLabel, MonthPicker } from "@/components/MonthPicker";
+import { formatMonthLabel } from "@/lib/date-utils";
+import { MonthPicker } from "@/components/MonthPicker";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";

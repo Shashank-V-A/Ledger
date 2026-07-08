@@ -1,6 +1,5 @@
 "use client";
 
-import { format, parseISO } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export function MonthPicker({ month }: { month: string }) {
@@ -21,8 +20,4 @@ export function MonthPicker({ month }: { month: string }) {
       className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
     />
   );
-}
-
-export function formatMonthLabel(month: string) {
-  return format(parseISO(`${month}-01`), "MMMM yyyy");
 }

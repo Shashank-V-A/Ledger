@@ -22,7 +22,7 @@ Personal expense tracker with a web dashboard, Telegram logging, AI insights, an
 
 - Next.js 16 (App Router)
 - Supabase (PostgreSQL)
-- OpenAI (parsing + insights)
+- Groq (parsing + insights)
 - Telegram Bot API
 - Recharts + jsPDF
 

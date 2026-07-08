@@ -10,7 +10,8 @@ import {
 import { AddExpenseForm } from "@/components/AddExpenseForm";
 import { CategoryPieChart, YearlyBarChart } from "@/components/Charts";
 import { InsightsList, StatCard } from "@/components/DashboardParts";
-import { formatMonthLabel, MonthPicker } from "@/components/MonthPicker";
+import { formatMonthLabel } from "@/lib/date-utils";
+import { MonthPicker } from "@/components/MonthPicker";
 import { getDaysInMonth, parseISO } from "date-fns";
 import { Suspense } from "react";
 

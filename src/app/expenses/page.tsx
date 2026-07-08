@@ -1,7 +1,8 @@
 import { getExpenses } from "@/lib/expenses";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
 import { ExpenseTable } from "@/components/DashboardParts";
-import { formatMonthLabel, MonthPicker } from "@/components/MonthPicker";
+import { formatMonthLabel } from "@/lib/date-utils";
+import { MonthPicker } from "@/components/MonthPicker";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
