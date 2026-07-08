@@ -146,7 +146,7 @@ export async function generateInsights(input: {
       {
         role: "system",
         content:
-          'Generate 3-5 personalized spending insights for an Indian user. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Be specific with numbers and categories. Compare to previous month if available. Mention budget overruns. No generic advice.',
+          'Generate 3-5 personalized spending insights for an Indian user. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Be specific with numbers and categories. Compare to previous month if available. Investments are included in total expenditure. No generic advice.',
       },
       { role: "user", content: JSON.stringify(input) },
     ],
@@ -181,33 +181,21 @@ function buildFallbackInsights(input: {
       ? Math.round((diff / input.previous.totalSpent) * 100)
       : 0;
     insights.push({
-      title: diff > 0 ? "Spending increased" : "Spending decreased",
-      detail: `Total spending is ${pct > 0 ? "+" : ""}${pct}% vs last month.`,
+      title: diff > 0 ? "Expenditure increased" : "Expenditure decreased",
+      detail: `Total expenditure is ${pct > 0 ? "+" : ""}${pct}% vs last month.`,
       type: diff > 0 ? "warning" : "positive",
     });
   }
 
   const top = [...input.current.byCategory]
-    .filter((c) => c.category !== "investments")
     .sort((a, b) => b.total - a.total)[0];
 
   if (top) {
     insights.push({
       title: "Top category",
-      detail: `${getCategoryLabel(top.category)} accounted for the most spending.`,
+      detail: `${getCategoryLabel(top.category)} accounted for the largest share at ₹${Math.round(top.total).toLocaleString("en-IN")}.`,
       type: "neutral",
     });
-  }
-
-  for (const budget of input.budgets) {
-    const spent = input.current.byCategory.find((c) => c.category === budget.category)?.total ?? 0;
-    if (spent > budget.monthly_limit) {
-      insights.push({
-        title: "Budget exceeded",
-        detail: `${getCategoryLabel(budget.category)} is over budget by ₹${Math.round(spent - budget.monthly_limit)}.`,
-        type: "warning",
-      });
-    }
   }
 
   return insights.slice(0, 5);

@@ -4,7 +4,6 @@ import {
   formatCurrency,
   getCategoryColor,
   getCategoryLabel,
-  isInvestmentCategory,
 } from "@/lib/categories";
 import type { CategorySummary } from "@/types";
 import {
@@ -41,7 +40,7 @@ function ChartTooltip({
 
 export function CategoryBreakdown({ data }: { data: CategorySummary[] }) {
   const items = data
-    .filter((d) => d.total > 0 && !isInvestmentCategory(d.category))
+    .filter((d) => d.total > 0)
     .sort((a, b) => b.total - a.total);
 
   const total = items.reduce((s, i) => s + i.total, 0);
@@ -128,9 +127,8 @@ export function YearlyBarChart({
         <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
         <Bar
           dataKey="spent"
-          fill="var(--accent-warm)"
+          fill="#6ea8fe"
           radius={[4, 4, 0, 0]}
-          opacity={0.85}
         />
       </BarChart>
     </ResponsiveContainer>

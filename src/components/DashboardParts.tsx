@@ -5,42 +5,38 @@ import {
   getCategoryLabel,
 } from "@/lib/categories";
 import type { AIInsight, Expense } from "@/types";
-import { Trash2, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { Trash2, TrendingDown, TrendingUp, Sparkles } from "lucide-react";
 
 export function HeroStat({
   label,
   value,
   delta,
-  variant = "default",
+  sub,
 }: {
   label: string;
   value: string;
   delta?: { amount: string; positive: boolean } | null;
-  variant?: "default" | "invest" | "muted";
+  sub?: string;
 }) {
-  const valueColor =
-    variant === "invest"
-      ? "text-[var(--positive)]"
-      : variant === "muted"
-        ? "text-[var(--text-secondary)]"
-        : "text-[var(--text)]";
-
   return (
-    <div className="panel p-6">
-      <p className="text-xs font-medium uppercase tracking-widest text-[var(--text-muted)]">
+    <div className="panel p-6 lg:p-8">
+      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">
         {label}
       </p>
-      <p className={`stat-value mt-3 text-4xl lg:text-5xl ${valueColor}`}>{value}</p>
+      <p className="stat-value mt-3 text-4xl text-[var(--text)] lg:text-5xl">{value}</p>
+      {sub && (
+        <p className="mt-2 text-sm text-[var(--text-secondary)]">{sub}</p>
+      )}
       {delta && (
         <p
-          className={`mt-2 flex items-center gap-1 text-sm ${
+          className={`mt-2 flex items-center gap-1.5 text-sm font-medium ${
             delta.positive ? "text-[var(--negative)]" : "text-[var(--positive)]"
           }`}
         >
           {delta.positive ? (
-            <TrendingUp className="h-3.5 w-3.5" />
+            <TrendingUp className="h-4 w-4" />
           ) : (
-            <TrendingDown className="h-3.5 w-3.5" />
+            <TrendingDown className="h-4 w-4" />
           )}
           {delta.amount} vs last month
         </p>
@@ -51,8 +47,8 @@ export function HeroStat({
 
 export function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="panel px-5 py-4">
-      <p className="text-xs text-[var(--text-muted)]">{label}</p>
+    <div className="panel flex flex-col justify-center px-5 py-4">
+      <p className="text-xs font-medium text-[var(--text-muted)]">{label}</p>
       <p className="stat-value mt-1.5 text-2xl text-[var(--text)]">{value}</p>
     </div>
   );
@@ -61,31 +57,52 @@ export function MiniStat({ label, value }: { label: string; value: string }) {
 export function InsightsList({ insights }: { insights: AIInsight[] }) {
   if (!insights.length) {
     return (
-      <p className="text-sm text-[var(--text-muted)]">
-        Keep logging expenses — insights appear once there&apos;s enough data.
-      </p>
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border-strong)] py-12 text-center">
+        <Sparkles className="mb-3 h-6 w-6 text-[var(--accent)] opacity-60" />
+        <p className="text-sm font-medium text-[var(--text-secondary)]">No insights yet</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
+          Log a few more expenses to unlock patterns
+        </p>
+      </div>
     );
   }
 
-  const icons = {
-    warning: <TrendingUp className="h-4 w-4 text-[var(--negative)]" />,
-    positive: <TrendingDown className="h-4 w-4 text-[var(--positive)]" />,
-    neutral: <Minus className="h-4 w-4 text-[var(--text-muted)]" />,
+  const styles = {
+    warning: "insight-card insight-card--warning",
+    positive: "insight-card insight-card--positive",
+    neutral: "insight-card insight-card--neutral",
+  };
+
+  const labels = {
+    warning: "Watch",
+    positive: "Good",
+    neutral: "Note",
+  };
+
+  const labelColors = {
+    warning: "text-[var(--negative)]",
+    positive: "text-[var(--positive)]",
+    neutral: "text-[var(--accent)]",
   };
 
   return (
-    <div className="divide-y divide-[var(--border)]">
+    <div className="grid gap-3 sm:grid-cols-2">
       {insights.map((insight, i) => (
-        <div key={i} className="flex gap-4 py-4 first:pt-0 last:pb-0">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-hover)]">
-            {icons[insight.type]}
+        <div key={i} className={styles[insight.type]}>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${labelColors[insight.type]}`}>
+              {labels[insight.type]}
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)]">
+              {String(i + 1).padStart(2, "0")}
+            </span>
           </div>
-          <div>
-            <p className="text-sm font-medium text-[var(--text)]">{insight.title}</p>
-            <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
-              {insight.detail}
-            </p>
-          </div>
+          <p className="text-sm font-semibold leading-snug text-[var(--text)]">
+            {insight.title}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+            {insight.detail}
+          </p>
         </div>
       ))}
     </div>
@@ -119,7 +136,7 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
       {expenses.map((expense) => (
         <div
           key={expense.id}
-          className="group flex items-center gap-4 py-4 transition-colors hover:bg-[var(--bg-hover)]/50 -mx-2 px-2 rounded-xl"
+          className="group flex items-center gap-4 py-4 transition-colors hover:bg-[var(--bg-hover)]/60 -mx-2 px-2 rounded-xl"
         >
           <div className="flex-1 min-w-0">
             <p className="truncate text-sm font-medium text-[var(--text)]">
@@ -131,13 +148,13 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
               <span className="text-xs capitalize text-[var(--text-muted)]">· {expense.source}</span>
             </div>
           </div>
-          <p className="stat-value shrink-0 text-lg text-[var(--text)]">
+          <p className="stat-value shrink-0 text-lg text-[var(--accent)]">
             {formatCurrency(Number(expense.amount))}
           </p>
           <form action={deleteExpenseAction.bind(null, expense.id)}>
             <button
               type="submit"
-              className="rounded-lg p-2 text-[var(--text-muted)] opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100"
+              className="rounded-lg p-2 text-[var(--text-muted)] opacity-0 transition-all hover:bg-[var(--negative-soft)] hover:text-[var(--negative)] group-hover:opacity-100"
               title="Delete"
             >
               <Trash2 className="h-4 w-4" />

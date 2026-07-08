@@ -27,9 +27,11 @@ export function generateMonthlyPdf(input: {
 
   doc.setTextColor(0);
   doc.setFontSize(14);
-  doc.text(`Total Spent: ${formatCurrency(summary.totalSpent)}`, 14, 42);
-  doc.text(`Investments: ${formatCurrency(summary.totalInvested)}`, 14, 50);
-  doc.text(`Transactions: ${summary.expenseCount}`, 14, 58);
+  doc.text(`Total Expenditure: ${formatCurrency(summary.totalSpent)}`, 14, 42);
+  if (summary.totalInvested > 0) {
+    doc.text(`(includes ${formatCurrency(summary.totalInvested)} investments)`, 14, 50);
+  }
+  doc.text(`Transactions: ${summary.expenseCount}`, 14, summary.totalInvested > 0 ? 58 : 50);
 
   if (previousSummary) {
     const diff = summary.totalSpent - previousSummary.totalSpent;

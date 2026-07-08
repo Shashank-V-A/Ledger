@@ -1,9 +1,7 @@
 import { parseExpenseText } from "@/lib/ai";
 import {
-  CATEGORIES,
   formatCurrency,
   getCategoryLabel,
-  isInvestmentCategory,
 } from "@/lib/categories";
 import {
   createExpense,
@@ -25,21 +23,18 @@ interface TelegramUpdate {
 function summarizeRange(expenses: Awaited<ReturnType<typeof getExpensesForDateRange>>, label: string) {
   if (!expenses.length) return `No expenses for ${label}.`;
 
-  let totalSpent = 0;
-  let totalInvested = 0;
+  let total = 0;
   const byCat = new Map<string, number>();
 
   for (const e of expenses) {
     const amt = Number(e.amount);
-    if (isInvestmentCategory(e.category)) totalInvested += amt;
-    else totalSpent += amt;
+    total += amt;
     byCat.set(e.category, (byCat.get(e.category) ?? 0) + amt);
   }
 
   const lines = [
     `📊 ${label}`,
-    `Spent: ${formatCurrency(totalSpent)}`,
-    `Invested: ${formatCurrency(totalInvested)}`,
+    `Total: ${formatCurrency(total)}`,
     "",
     ...Array.from(byCat.entries())
       .sort((a, b) => b[1] - a[1])

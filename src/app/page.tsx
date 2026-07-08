@@ -1,7 +1,6 @@
 import { generateInsights } from "@/lib/ai";
 import { formatCurrency } from "@/lib/categories";
 import {
-  getBudgets,
   getExpenses,
   getMonthlySummary,
   getPreviousMonthSummary,
@@ -18,11 +17,10 @@ export const dynamic = "force-dynamic";
 
 async function DashboardContent({ month }: { month: string }) {
   const year = parseInt(month.slice(0, 4), 10);
-  const [summary, previous, expenses, budgets, yearly] = await Promise.all([
+  const [summary, previous, expenses, yearly] = await Promise.all([
     getMonthlySummary(month),
     getPreviousMonthSummary(month),
     getExpenses({ month }),
-    getBudgets(),
     getYearlyData(year),
   ]);
 
@@ -49,10 +47,7 @@ async function DashboardContent({ month }: { month: string }) {
           })),
         }
       : null,
-    budgets: budgets.map((b) => ({
-      category: b.category,
-      monthly_limit: Number(b.monthly_limit),
-    })),
+    budgets: [],
     topExpenses: topExpenses.map((e) => ({
       description: e.description ?? "-",
       amount: Number(e.amount),
@@ -60,11 +55,18 @@ async function DashboardContent({ month }: { month: string }) {
     })),
   });
 
-  const spentDiff = previous ? summary.totalSpent - previous.totalSpent : null;
+  const expenditureDiff = previous
+    ? summary.totalSpent - previous.totalSpent
+    : null;
   const daysInMonth = getDaysInMonth(parseISO(`${month}-01`));
   const avgPerDay = summary.totalSpent
     ? Math.round(summary.totalSpent / daysInMonth)
     : 0;
+
+  const investmentSub =
+    summary.totalInvested > 0
+      ? `Includes ${formatCurrency(summary.totalInvested)} in investments`
+      : undefined;
 
   return (
     <>
@@ -74,34 +76,33 @@ async function DashboardContent({ month }: { month: string }) {
         subtitle={`${summary.expenseCount} transactions this month`}
       />
 
-      {/* Hero stats */}
       <div className="mb-6 grid gap-4 lg:grid-cols-12 animate-fade-up" style={{ animationDelay: "0.05s" }}>
         <div className="lg:col-span-7">
           <HeroStat
-            label="Total spent"
+            label="Total expenditure"
             value={formatCurrency(summary.totalSpent)}
+            sub={investmentSub}
             delta={
-              spentDiff !== null
+              expenditureDiff !== null
                 ? {
-                    amount: `${spentDiff >= 0 ? "+" : ""}${formatCurrency(spentDiff)}`,
-                    positive: spentDiff > 0,
+                    amount: `${expenditureDiff >= 0 ? "+" : ""}${formatCurrency(expenditureDiff)}`,
+                    positive: expenditureDiff > 0,
                   }
                 : null
             }
           />
         </div>
         <div className="grid grid-cols-2 gap-4 lg:col-span-5">
-          <MiniStat label="Invested" value={formatCurrency(summary.totalInvested)} />
-          <MiniStat label="Daily avg" value={formatCurrency(avgPerDay)} />
+          <MiniStat label="Transactions" value={String(summary.expenseCount)} />
+          <MiniStat label="Daily average" value={formatCurrency(avgPerDay)} />
         </div>
       </div>
 
-      {/* Charts row */}
       <div className="mb-6 grid gap-4 lg:grid-cols-2 animate-fade-up" style={{ animationDelay: "0.1s" }}>
         <section className="panel">
           <div className="panel-header">
-            <h2 className="text-sm font-medium text-[var(--text)]">By category</h2>
-            <p className="mt-0.5 text-xs text-[var(--text-muted)]">Spending breakdown</p>
+            <h2 className="text-sm font-semibold text-[var(--text)]">By category</h2>
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">All spending including investments</p>
           </div>
           <div className="panel-body">
             <CategoryBreakdown data={summary.byCategory} />
@@ -110,8 +111,8 @@ async function DashboardContent({ month }: { month: string }) {
 
         <section className="panel">
           <div className="panel-header">
-            <h2 className="text-sm font-medium text-[var(--text)]">{year} at a glance</h2>
-            <p className="mt-0.5 text-xs text-[var(--text-muted)]">Monthly spending trend</p>
+            <h2 className="text-sm font-semibold text-[var(--text)]">{year} at a glance</h2>
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">Monthly expenditure trend</p>
           </div>
           <div className="panel-body">
             <YearlyBarChart data={yearly} />
@@ -119,21 +120,21 @@ async function DashboardContent({ month }: { month: string }) {
         </section>
       </div>
 
-      {/* Insights */}
-      <section className="panel mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-        <div className="panel-header">
-          <h2 className="text-sm font-medium text-[var(--text)]">Insights</h2>
-          <p className="mt-0.5 text-xs text-[var(--text-muted)]">Patterns and suggestions</p>
+      <section className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+        <div className="mb-4">
+          <h2 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-[var(--text)]">
+            Insights
+          </h2>
+          <p className="mt-0.5 text-sm text-[var(--text-muted)]">
+            AI-powered patterns from your spending
+          </p>
         </div>
-        <div className="panel-body">
-          <InsightsList insights={insights} />
-        </div>
+        <InsightsList insights={insights} />
       </section>
 
-      {/* Quick add */}
       <section className="panel animate-fade-up" style={{ animationDelay: "0.2s" }}>
         <div className="panel-header">
-          <h2 className="text-sm font-medium text-[var(--text)]">Quick add</h2>
+          <h2 className="text-sm font-semibold text-[var(--text)]">Quick add</h2>
           <p className="mt-0.5 text-xs text-[var(--text-muted)]">Or log via Telegram anytime</p>
         </div>
         <div className="panel-body">

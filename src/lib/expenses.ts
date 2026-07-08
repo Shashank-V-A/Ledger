@@ -147,14 +147,14 @@ function summarizeExpenses(expenses: Expense[]): MonthlySummary {
 
   for (const expense of expenses) {
     const category = normalizeCategory(expense.category);
+    const amount = Number(expense.amount);
     const entry = byCategoryMap.get(category)!;
-    entry.total += Number(expense.amount);
+    entry.total += amount;
     entry.count += 1;
 
+    totalSpent += amount;
     if (isInvestmentCategory(category)) {
-      totalInvested += Number(expense.amount);
-    } else {
-      totalSpent += Number(expense.amount);
+      totalInvested += amount;
     }
   }
 
@@ -231,11 +231,11 @@ export async function getYearlyData(year: number) {
   for (const expense of expenses) {
     const monthKey = expense.expense_date.slice(0, 7);
     if (!months[monthKey]) continue;
+    const amount = Number(expense.amount);
     months[monthKey].expenseCount += 1;
+    months[monthKey].totalSpent += amount;
     if (isInvestmentCategory(expense.category)) {
-      months[monthKey].totalInvested += Number(expense.amount);
-    } else {
-      months[monthKey].totalSpent += Number(expense.amount);
+      months[monthKey].totalInvested += amount;
     }
   }
 

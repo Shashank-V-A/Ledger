@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     }
 
     const monthLabel = format(new Date(`${reportMonth}-01`), "MMMM yyyy");
-    const caption = `📄 ${monthLabel} Report\nSpent: ${formatCurrency(summary.totalSpent)} | Invested: ${formatCurrency(summary.totalInvested)}`;
+    const caption = `📄 ${monthLabel} Report\nTotal expenditure: ${formatCurrency(summary.totalSpent)}`;
 
     for (const chatId of chatIds) {
       await sendTelegramDocument(
