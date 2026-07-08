@@ -17,18 +17,43 @@ const groq = process.env.GROQ_API_KEY
 
 function guessCategoryFromKeywords(text: string): CategoryId {
   const lower = text.toLowerCase();
+
+  // Prefer longer keyword matches (e.g. "outside home" before "outside")
+  const matches: { id: CategoryId; length: number }[] = [];
   for (const [id, cat] of Object.entries(CATEGORIES)) {
-    if (cat.keywords.some((kw) => lower.includes(kw))) {
-      return id as CategoryId;
+    for (const kw of cat.keywords) {
+      if (lower.includes(kw)) {
+        matches.push({ id: id as CategoryId, length: kw.length });
+      }
     }
   }
+
+  if (matches.length) {
+    matches.sort((a, b) => b.length - a.length);
+    return matches[0].id;
+  }
+
   return "miscellaneous";
+}
+
+function cleanDescription(text: string, amount: number): string {
+  return (
+    text
+      .replace(/(?:rs\.?|inr|₹)\s*[\d,]+(?:\.\d{1,2})?/gi, "")
+      .replace(/[\d,]+(?:\.\d{1,2})?\s*(?:rs\.?|inr|₹)/gi, "")
+      .replace(new RegExp(`\\b${amount}\\s*/-`, "g"), "")
+      .replace(/\b[\d,]+(?:\.\d{1,2})?\s*\/-\b/g, "")
+      .replace(/\b[\d,]+(?:\.\d{1,2})?\b/g, "")
+      .replace(/^[\s\-/]+|[\s\-/]+$/g, "")
+      .trim() || "Expense"
+  );
 }
 
 function parseAmount(text: string): number | null {
   const patterns = [
     /(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i,
     /([\d,]+(?:\.\d{1,2})?)\s*(?:rs\.?|inr|₹)/i,
+    /\b([\d,]+(?:\.\d{1,2})?)\s*\/-\b/,
     /\b([\d,]+(?:\.\d{1,2})?)\b/,
   ];
 
@@ -47,18 +72,16 @@ function ruleBasedParse(text: string): ParsedExpense | null {
   if (!amount) return null;
 
   const category = guessCategoryFromKeywords(text);
-  const description = text
-    .replace(/(?:rs\.?|inr|₹)\s*[\d,]+(?:\.\d{1,2})?/gi, "")
-    .replace(/[\d,]+(?:\.\d{1,2})?\s*(?:rs\.?|inr|₹)/gi, "")
-    .replace(/\b[\d,]+(?:\.\d{1,2})?\b/g, "")
-    .trim() || "Expense";
+  const description = cleanDescription(text, amount);
 
   return { amount, category, description };
 }
 
 export async function parseExpenseText(text: string): Promise<ParsedExpense> {
   const ruleResult = ruleBasedParse(text);
-  if (ruleResult && ruleResult.description.length > 2) {
+
+  // Only trust rule-based parsing when a specific category was matched
+  if (ruleResult && ruleResult.category !== "miscellaneous") {
     return ruleResult;
   }
 
@@ -78,7 +101,7 @@ export async function parseExpenseText(text: string): Promise<ParsedExpense> {
     messages: [
       {
         role: "system",
-        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR. Use food_small for tea/coffee/snacks, food_ordering for restaurant/delivery.`,
+        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR. Use food_small for tea/coffee/snacks bought casually. Use food_ordering for restaurant meals, eating outside home, pancakes, lunch/dinner out, zomato/swiggy.`,
       },
       { role: "user", content: text },
     ],
