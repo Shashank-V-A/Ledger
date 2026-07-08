@@ -131,17 +131,35 @@ select.field {
 
 input[type="date"].field,
 input[type="month"].field {
-  padding-right: 2.5rem;
+  position: relative;
+  padding-right: 2.75rem;
   cursor: pointer;
+  text-align: left;
 }
 
 input[type="date"].field::-webkit-calendar-picker-indicator,
 input[type="month"].field::-webkit-calendar-picker-indicator {
-  opacity: 0.7;
-  cursor: pointer;
+  position: absolute;
+  right: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
   margin: 0;
   padding: 0;
-  margin-right: 0.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.month-picker-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.month-picker-field input[type="month"].field {
+  width: 11rem;
+  min-width: 11rem;
 }
 
 .field-wrap {

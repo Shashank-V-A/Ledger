@@ -15,7 +15,10 @@ const groq = process.env.GROQ_API_KEY
     })
   : null;
 
-function guessCategoryFromKeywords(text: string): CategoryId {
+function guessCategoryFromKeywords(text: string): {
+  category: CategoryId;
+  matched: boolean;
+} {
   const lower = text.toLowerCase();
 
   // Prefer longer keyword matches (e.g. "outside home" before "outside")
@@ -30,10 +33,10 @@ function guessCategoryFromKeywords(text: string): CategoryId {
 
   if (matches.length) {
     matches.sort((a, b) => b.length - a.length);
-    return matches[0].id;
+    return { category: matches[0].id, matched: true };
   }
 
-  return "miscellaneous";
+  return { category: "miscellaneous", matched: false };
 }
 
 function cleanDescription(text: string, amount: number): string {
@@ -67,26 +70,32 @@ function parseAmount(text: string): number | null {
   return null;
 }
 
-function ruleBasedParse(text: string): ParsedExpense | null {
+function ruleBasedParse(
+  text: string
+): (ParsedExpense & { matched: boolean }) | null {
   const amount = parseAmount(text);
   if (!amount) return null;
 
-  const category = guessCategoryFromKeywords(text);
+  const { category, matched } = guessCategoryFromKeywords(text);
   const description = cleanDescription(text, amount);
 
-  return { amount, category, description };
+  return { amount, category, description, matched };
 }
 
 export async function parseExpenseText(text: string): Promise<ParsedExpense> {
   const ruleResult = ruleBasedParse(text);
 
-  // Only trust rule-based parsing when a specific category was matched
-  if (ruleResult && ruleResult.category !== "miscellaneous") {
-    return ruleResult;
+  // Trust rule-based parsing when keywords matched (including explicit miscellaneous)
+  if (ruleResult?.matched) {
+    const { matched: _, ...parsed } = ruleResult;
+    return parsed;
   }
 
   if (!groq) {
-    if (ruleResult) return ruleResult;
+    if (ruleResult) {
+      const { matched: _, ...parsed } = ruleResult;
+      return parsed;
+    }
     throw new Error("Could not parse expense. Set GROQ_API_KEY for smarter parsing.");
   }
 
@@ -101,7 +110,7 @@ export async function parseExpenseText(text: string): Promise<ParsedExpense> {
     messages: [
       {
         role: "system",
-        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR. Use food_small for tea/coffee/snacks. Use food_dining_out for eating at restaurants or outside home. Use food_ordering_in for zomato/swiggy/delivery orders.`,
+        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR.\n\nRules:\n- food_small: tea, coffee, snacks\n- food_dining_out: restaurants, eating outside home\n- food_ordering_in: zomato, swiggy, delivery\n- entertainment: leisure only — movies, games, concerts, streaming (netflix/spotify)\n- miscellaneous: hackathons, registrations, workshops, courses, exam fees, one-off fees, gifts, repairs, and anything that does not clearly fit another category`,
       },
       { role: "user", content: text },
     ],
@@ -115,7 +124,7 @@ export async function parseExpenseText(text: string): Promise<ParsedExpense> {
     throw new Error("Could not detect a valid amount");
   }
   if (!(parsed.category in CATEGORIES)) {
-    parsed.category = guessCategoryFromKeywords(text);
+    parsed.category = guessCategoryFromKeywords(text).category;
   }
   return parsed;
 }

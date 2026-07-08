@@ -30,12 +30,14 @@ export function MonthPicker({ month }: { month: string }) {
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
-      <input
-        type="month"
-        value={month}
-        onChange={(e) => navigate(e.target.value)}
-        className="field !w-[9.5rem] !border-none !bg-transparent !px-2 text-center text-sm font-semibold !shadow-none focus:!shadow-none"
-      />
+      <div className="month-picker-field">
+        <input
+          type="month"
+          value={month}
+          onChange={(e) => navigate(e.target.value)}
+          className="field !border-none !bg-transparent !px-2 text-sm font-semibold !shadow-none focus:!shadow-none"
+        />
+      </div>
       <button
         type="button"
         onClick={() => shift(1)}
