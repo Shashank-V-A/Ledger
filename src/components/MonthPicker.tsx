@@ -21,7 +21,7 @@ export function MonthPicker({ month }: { month: string }) {
   }
 
   return (
-    <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 rounded-xl border border-[var(--border-strong)] bg-white px-1 py-1 shadow-sm">
       <button
         type="button"
         onClick={() => shift(-1)}
@@ -34,7 +34,7 @@ export function MonthPicker({ month }: { month: string }) {
         type="month"
         value={month}
         onChange={(e) => navigate(e.target.value)}
-        className="field !w-auto !border-none !bg-transparent !px-2 text-center text-sm font-medium !shadow-none"
+        className="field !w-[9.5rem] !border-none !bg-transparent !px-2 text-center text-sm font-semibold !shadow-none focus:!shadow-none"
       />
       <button
         type="button"

@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0e1117;
-  --bg-elevated: #161b26;
-  --bg-card: #1a2030;
-  --bg-hover: #222a3a;
-  --border: rgba(148, 163, 184, 0.14);
-  --border-strong: rgba(148, 163, 184, 0.28);
-  --text: #f0f4fa;
-  --text-secondary: #b8c2d4;
-  --text-muted: #8490a6;
-  --accent: #6ea8fe;
-  --accent-soft: rgba(110, 168, 254, 0.12);
-  --accent-warm: #6ea8fe;
-  --positive: #4ade80;
-  --positive-soft: rgba(74, 222, 128, 0.1);
-  --negative: #f87171;
-  --negative-soft: rgba(248, 113, 113, 0.1);
-  --warning: #fbbf24;
-  --warning-soft: rgba(251, 191, 36, 0.1);
-  --neutral-soft: rgba(148, 163, 184, 0.08);
-  --glow: rgba(110, 168, 254, 0.08);
+  /* Palette */
+  --mint: #dbe8d8;
+  --teal: #01949a;
+  --teal-dark: #014b4e;
+  --teal-mid: #017a7f;
+  --teal-light: #e6f5f5;
+
+  /* Surfaces */
+  --bg: var(--mint);
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #eef5ec;
+  --sidebar: var(--teal);
+
+  /* Borders */
+  --border: rgba(1, 148, 154, 0.18);
+  --border-strong: rgba(1, 148, 154, 0.32);
+
+  /* Text */
+  --text: var(--teal-dark);
+  --text-secondary: var(--teal-mid);
+  --text-muted: #4a8f93;
+  --text-on-teal: #ffffff;
+  --text-on-teal-muted: rgba(219, 232, 216, 0.85);
+
+  /* Accents */
+  --accent: var(--teal);
+  --accent-soft: rgba(1, 148, 154, 0.1);
+  --accent-warm: var(--teal);
+  --positive: #018a5e;
+  --positive-soft: rgba(1, 138, 94, 0.1);
+  --negative: #d64545;
+  --negative-soft: rgba(214, 69, 69, 0.08);
+  --warning: #c98b1a;
+  --warning-soft: rgba(201, 139, 26, 0.1);
+  --glow: rgba(1, 148, 154, 0.06);
 }
 
 @theme inline {
@@ -51,8 +67,8 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 70% 50% at 20% -10%, var(--glow), transparent),
-    radial-gradient(ellipse 50% 40% at 90% 10%, rgba(74, 222, 128, 0.04), transparent);
+    radial-gradient(ellipse 80% 60% at 0% 0%, var(--glow), transparent),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(219, 232, 216, 0.6), transparent);
   pointer-events: none;
   z-index: 0;
 }
@@ -65,8 +81,8 @@ textarea {
 }
 
 ::selection {
-  background: rgba(110, 168, 254, 0.35);
-  color: var(--text);
+  background: rgba(1, 148, 154, 0.25);
+  color: var(--teal-dark);
 }
 
 ::-webkit-scrollbar {
@@ -77,15 +93,15 @@ textarea {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: rgba(1, 148, 154, 0.3);
   border-radius: 3px;
 }
 
 .field {
   width: 100%;
   border-radius: 10px;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-elevated);
+  border: 1.5px solid var(--border-strong);
+  background: #ffffff;
   color: var(--text);
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
@@ -93,11 +109,48 @@ textarea {
   outline: none;
 }
 .field:focus {
-  border-color: var(--accent);
+  border-color: var(--teal);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .field::placeholder {
   color: var(--text-muted);
+}
+
+/* Select & date inputs — custom arrow inside the box */
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 2.5rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2301949a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+input[type="date"].field,
+input[type="month"].field {
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+input[type="date"].field::-webkit-calendar-picker-indicator,
+input[type="month"].field::-webkit-calendar-picker-indicator {
+  opacity: 0.7;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  margin-right: 0.25rem;
+}
+
+.field-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.field-wrap select.field {
+  width: 100%;
 }
 
 .btn-primary {
@@ -106,17 +159,18 @@ textarea {
   justify-content: center;
   gap: 0.5rem;
   border-radius: 10px;
-  background: var(--accent);
-  color: #0e1117;
+  background: var(--teal);
+  color: #ffffff;
   font-size: 0.875rem;
   font-weight: 600;
   padding: 0.625rem 1.25rem;
   border: none;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(1, 148, 154, 0.25);
 }
 .btn-primary:hover {
-  opacity: 0.9;
+  background: var(--teal-mid);
 }
 .btn-primary:active {
   transform: scale(0.98);
@@ -128,31 +182,32 @@ textarea {
   justify-content: center;
   gap: 0.5rem;
   border-radius: 10px;
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
+  background: #ffffff;
+  color: var(--teal-mid);
   font-size: 0.875rem;
   font-weight: 500;
   padding: 0.5rem 0.875rem;
-  border: 1px solid var(--border-strong);
+  border: 1.5px solid var(--border-strong);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .btn-ghost:hover {
-  background: var(--bg-hover);
-  color: var(--text);
-  border-color: var(--accent);
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border-color: var(--teal);
 }
 
 .panel {
   border-radius: 16px;
-  border: 1px solid var(--border-strong);
+  border: 1.5px solid var(--border);
   background: var(--bg-card);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  box-shadow: 0 2px 12px rgba(1, 75, 78, 0.06);
 }
 
 .panel-header {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(to bottom, #ffffff, #fafdf9);
 }
 
 .panel-body {
@@ -164,6 +219,7 @@ textarea {
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
+  color: var(--teal-dark);
 }
 
 .category-pill {
@@ -174,9 +230,9 @@ textarea {
   padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  background: var(--teal-light);
+  color: var(--teal-mid);
 }
 
 .category-dot {
@@ -188,25 +244,27 @@ textarea {
 
 .insight-card {
   border-radius: 14px;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  background: #ffffff;
   padding: 1.125rem 1.25rem;
-  transition: border-color 0.15s;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  box-shadow: 0 1px 6px rgba(1, 75, 78, 0.05);
 }
 .insight-card:hover {
-  border-color: var(--accent);
+  border-color: var(--teal);
+  box-shadow: 0 4px 16px rgba(1, 148, 154, 0.1);
 }
 .insight-card--warning {
-  border-left: 3px solid var(--negative);
-  background: linear-gradient(135deg, var(--negative-soft), var(--bg-elevated));
+  border-left: 4px solid var(--negative);
+  background: linear-gradient(135deg, #fff8f8, #ffffff);
 }
 .insight-card--positive {
-  border-left: 3px solid var(--positive);
-  background: linear-gradient(135deg, var(--positive-soft), var(--bg-elevated));
+  border-left: 4px solid var(--positive);
+  background: linear-gradient(135deg, #f0faf5, #ffffff);
 }
 .insight-card--neutral {
-  border-left: 3px solid var(--accent);
-  background: linear-gradient(135deg, var(--accent-soft), var(--bg-elevated));
+  border-left: 4px solid var(--teal);
+  background: linear-gradient(135deg, var(--teal-light), #ffffff);
 }
 
 @keyframes fade-up {

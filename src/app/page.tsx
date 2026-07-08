@@ -11,6 +11,7 @@ import { CategoryBreakdown, YearlyBarChart } from "@/components/Charts";
 import { HeroStat, InsightsList, MiniStat } from "@/components/DashboardParts";
 import { PageHeader } from "@/components/PageHeader";
 import { getDaysInMonth, parseISO } from "date-fns";
+import Link from "next/link";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
@@ -100,9 +101,17 @@ async function DashboardContent({ month }: { month: string }) {
 
       <div className="mb-6 grid gap-4 lg:grid-cols-2 animate-fade-up" style={{ animationDelay: "0.1s" }}>
         <section className="panel">
-          <div className="panel-header">
-            <h2 className="text-sm font-semibold text-[var(--text)]">By category</h2>
-            <p className="mt-0.5 text-xs text-[var(--text-muted)]">All spending including investments</p>
+          <div className="panel-header flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-[var(--text)]">By category</h2>
+              <p className="mt-0.5 text-xs text-[var(--text-muted)]">All spending including investments</p>
+            </div>
+            <Link
+              href={`/categories?month=${month}`}
+              className="text-xs font-semibold text-[var(--teal)] hover:underline shrink-0"
+            >
+              View details →
+            </Link>
           </div>
           <div className="panel-body">
             <CategoryBreakdown data={summary.byCategory} />

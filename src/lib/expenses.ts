@@ -242,4 +242,25 @@ export async function getYearlyData(year: number) {
   return Object.values(months);
 }
 
+export async function getExpensesGroupedByCategory(month: string) {
+  const expenses = await getExpenses({ month });
+  const groups = new Map<CategoryId, Expense[]>();
+
+  for (const expense of expenses) {
+    const category = normalizeCategory(expense.category);
+    const list = groups.get(category) ?? [];
+    list.push(expense);
+    groups.set(category, list);
+  }
+
+  return Array.from(groups.entries())
+    .map(([category, items]) => ({
+      category,
+      total: items.reduce((s, e) => s + Number(e.amount), 0),
+      count: items.length,
+      items: [...items].sort((a, b) => Number(b.amount) - Number(a.amount)),
+    }))
+    .sort((a, b) => b.total - a.total);
+}
+
 export { SPENDING_CATEGORIES };

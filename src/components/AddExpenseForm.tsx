@@ -31,7 +31,7 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
         />
       </div>
 
-      <div className={compact ? "min-w-[160px]" : "lg:col-span-3"}>
+      <div className={compact ? "field-wrap min-w-[160px]" : "field-wrap lg:col-span-3"}>
         {!compact && (
           <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
             Category
@@ -44,7 +44,7 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
             </option>
           ))}
         </select>
-      </div>
+        </div>
 
       <div className={compact ? "flex-1 min-w-[140px]" : "lg:col-span-3"}>
         {!compact && (

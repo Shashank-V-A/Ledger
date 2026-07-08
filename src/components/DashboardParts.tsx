@@ -148,7 +148,7 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
               <span className="text-xs capitalize text-[var(--text-muted)]">· {expense.source}</span>
             </div>
           </div>
-          <p className="stat-value shrink-0 text-lg text-[var(--accent)]">
+          <p className="stat-value shrink-0 text-lg text-[var(--teal)]">
             {formatCurrency(Number(expense.amount))}
           </p>
           <form action={deleteExpenseAction.bind(null, expense.id)}>

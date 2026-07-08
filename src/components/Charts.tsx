@@ -70,7 +70,7 @@ export function CategoryBreakdown({ data }: { data: CategorySummary[] }) {
                 <span className="ml-2 text-[var(--text-muted)]">{pct}%</span>
               </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--bg-hover)]">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--mint)]">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${pct}%`, background: color }}
@@ -108,26 +108,26 @@ export function YearlyBarChart({
       <BarChart data={chartData} barSize={20}>
         <CartesianGrid
           strokeDasharray="3 3"
-          stroke="rgba(255,255,255,0.04)"
+          stroke="rgba(1, 148, 154, 0.12)"
           vertical={false}
         />
         <XAxis
           dataKey="month"
-          tick={{ fill: "#63636e", fontSize: 11 }}
+          tick={{ fill: "#4a8f93", fontSize: 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#63636e", fontSize: 11 }}
+          tick={{ fill: "#4a8f93", fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => (v >= 1000 ? `₹${v / 1000}k` : `₹${v}`)}
           width={48}
         />
-        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(1, 148, 154, 0.06)" }} />
         <Bar
           dataKey="spent"
-          fill="#6ea8fe"
+          fill="#01949a"
           radius={[4, 4, 0, 0]}
         />
       </BarChart>
