@@ -28,6 +28,33 @@ function formatPdfCurrency(amount: number): string {
   return amount < 0 ? `-Rs. ${formatted}` : `Rs. ${formatted}`;
 }
 
+/** Strip/replace characters that break Helvetica metrics in jsPDF */
+function sanitizePdfText(text: string): string {
+  return text
+    .replace(/\u20B9/g, "Rs. ")
+    .replace(/₹\s*/g, "Rs. ")
+    .replace(/\bINR\s*/gi, "Rs. ")
+    .replace(/[\u00A0\u2000-\u200B]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function drawLeftAlignedLines(
+  doc: jsPDF,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number
+): number {
+  const lines = doc.splitTextToSize(sanitizePdfText(text), maxWidth);
+  for (const line of lines) {
+    doc.text(line, x, y);
+    y += lineHeight;
+  }
+  return y;
+}
+
 function drawPageFooter(doc: jsPDF, page: number, total: number) {
   const y = 287;
   doc.setFont("helvetica", "normal");
@@ -155,8 +182,11 @@ function drawInsights(doc: jsPDF, insights: AIInsight[], startY: number): number
   }
 
   for (const insight of insights) {
-    const titleLines = doc.splitTextToSize(insight.title, CONTENT_W - 12);
-    const detailLines = doc.splitTextToSize(insight.detail, CONTENT_W - 12);
+    const textWidth = CONTENT_W - 12;
+    const title = sanitizePdfText(insight.title);
+    const detail = sanitizePdfText(insight.detail);
+    const titleLines = doc.splitTextToSize(title, textWidth);
+    const detailLines = doc.splitTextToSize(detail, textWidth);
     const blockH = 10 + titleLines.length * 5 + 3 + detailLines.length * 4.5 + 8;
 
     if (y + blockH > 265) {
@@ -187,13 +217,13 @@ function drawInsights(doc: jsPDF, insights: AIInsight[], startY: number): number
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...TEXT);
-    doc.text(titleLines, MARGIN + 6, innerY);
-    innerY += titleLines.length * 5 + 3;
+    innerY = drawLeftAlignedLines(doc, title, MARGIN + 6, innerY, textWidth, 5);
+    innerY += 3;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...MUTED);
-    doc.text(detailLines, MARGIN + 6, innerY);
+    drawLeftAlignedLines(doc, detail, MARGIN + 6, innerY, textWidth, 4.5);
 
     y += blockH + 6;
   }

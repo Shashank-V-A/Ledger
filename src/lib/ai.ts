@@ -155,7 +155,7 @@ export async function generateInsights(input: {
       {
         role: "system",
         content:
-          'Generate 3-5 personalized spending insights for an Indian user. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Be specific with numbers and categories. Compare to previous month if available. Investments are included in total expenditure. No generic advice.',
+          'Generate 3-5 personalized spending insights for an Indian user. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Be specific with numbers and categories. Compare to previous month if available. Investments are included in total expenditure. Use "Rs." for amounts (never the rupee symbol). No generic advice.',
       },
       { role: "user", content: JSON.stringify(input) },
     ],
