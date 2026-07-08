@@ -3,6 +3,7 @@ import {
   CATEGORIES,
   formatCurrency,
   getCategoryLabel,
+  isInvestmentCategory,
 } from "@/lib/categories";
 import {
   createExpense,
@@ -30,7 +31,7 @@ function summarizeRange(expenses: Awaited<ReturnType<typeof getExpensesForDateRa
 
   for (const e of expenses) {
     const amt = Number(e.amount);
-    if (CATEGORIES[e.category].isInvestment) totalInvested += amt;
+    if (isInvestmentCategory(e.category)) totalInvested += amt;
     else totalSpent += amt;
     byCat.set(e.category, (byCat.get(e.category) ?? 0) + amt);
   }

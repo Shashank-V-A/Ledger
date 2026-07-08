@@ -194,6 +194,10 @@ export function normalizeCategory(id: string): CategoryId {
   return "miscellaneous";
 }
 
+export function isInvestmentCategory(id: string): boolean {
+  return CATEGORIES[normalizeCategory(id)].isInvestment;
+}
+
 export function isValidCategory(id: string): id is CategoryId {
   return id in CATEGORIES;
 }

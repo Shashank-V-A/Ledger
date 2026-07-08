@@ -3,6 +3,7 @@ import {
   type CategoryId,
   SPENDING_CATEGORIES,
   normalizeCategory,
+  isInvestmentCategory,
 } from "@/lib/categories";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { CategorySummary, Expense, MonthlySummary } from "@/types";
@@ -150,7 +151,7 @@ function summarizeExpenses(expenses: Expense[]): MonthlySummary {
     entry.total += Number(expense.amount);
     entry.count += 1;
 
-    if (CATEGORIES[category].isInvestment) {
+    if (isInvestmentCategory(category)) {
       totalInvested += Number(expense.amount);
     } else {
       totalSpent += Number(expense.amount);
@@ -231,7 +232,7 @@ export async function getYearlyData(year: number) {
     const monthKey = expense.expense_date.slice(0, 7);
     if (!months[monthKey]) continue;
     months[monthKey].expenseCount += 1;
-    if (CATEGORIES[expense.category].isInvestment) {
+    if (isInvestmentCategory(expense.category)) {
       months[monthKey].totalInvested += Number(expense.amount);
     } else {
       months[monthKey].totalSpent += Number(expense.amount);

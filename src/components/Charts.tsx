@@ -4,8 +4,8 @@ import {
   formatCurrency,
   getCategoryColor,
   getCategoryLabel,
+  isInvestmentCategory,
 } from "@/lib/categories";
-import { CATEGORIES } from "@/lib/categories";
 import type { CategorySummary } from "@/types";
 import {
   Bar,
@@ -41,7 +41,7 @@ function ChartTooltip({
 
 export function CategoryBreakdown({ data }: { data: CategorySummary[] }) {
   const items = data
-    .filter((d) => d.total > 0 && !CATEGORIES[d.category as keyof typeof CATEGORIES]?.isInvestment)
+    .filter((d) => d.total > 0 && !isInvestmentCategory(d.category))
     .sort((a, b) => b.total - a.total);
 
   const total = items.reduce((s, i) => s + i.total, 0);
