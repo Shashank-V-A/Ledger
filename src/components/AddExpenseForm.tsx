@@ -11,10 +11,10 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
       className={
         compact
           ? "flex flex-wrap items-end gap-3"
-          : "grid gap-3 sm:grid-cols-2 lg:grid-cols-12"
+          : "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12"
       }
     >
-      <div className={compact ? "" : "lg:col-span-2"}>
+      <div className={compact ? "" : "min-w-0 lg:col-span-2"}>
         {!compact && (
           <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
             Amount
@@ -31,7 +31,7 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
         />
       </div>
 
-      <div className={compact ? "field-wrap min-w-[160px]" : "field-wrap lg:col-span-3"}>
+      <div className={compact ? "field-wrap min-w-[160px]" : "field-wrap min-w-0 lg:col-span-3"}>
         {!compact && (
           <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
             Category
@@ -46,7 +46,7 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
         </select>
         </div>
 
-      <div className={compact ? "flex-1 min-w-[140px]" : "lg:col-span-3"}>
+      <div className={compact ? "flex-1 min-w-[140px]" : "min-w-0 lg:col-span-3"}>
         {!compact && (
           <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
             Description
@@ -60,7 +60,7 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
         />
       </div>
 
-      <div className={compact ? "" : "lg:col-span-2"}>
+      <div className={compact ? "" : "min-w-0 lg:col-span-2"}>
         {!compact && (
           <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
             Date
@@ -70,7 +70,7 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
           name="expense_date"
           type="date"
           defaultValue={today}
-          className="field"
+          className="field field-date"
         />
       </div>
 

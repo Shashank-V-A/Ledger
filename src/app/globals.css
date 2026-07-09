@@ -132,9 +132,15 @@ select.field {
 input[type="date"].field,
 input[type="month"].field {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
   padding-right: 2.75rem;
   cursor: pointer;
   text-align: left;
+}
+
+.field-date {
+  overflow: hidden;
 }
 
 input[type="date"].field::-webkit-calendar-picker-indicator,
@@ -158,13 +164,24 @@ input[type="month"].field::-webkit-calendar-picker-indicator {
 }
 
 .month-picker-field input[type="month"].field {
-  width: 11rem;
-  min-width: 11rem;
+  width: auto;
+  min-width: 0;
+  max-width: 9rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .delete-on-hover {
+    opacity: 0;
+  }
+  .group:hover .delete-on-hover {
+    opacity: 1;
+  }
 }
 
 .field-wrap {
   position: relative;
   width: 100%;
+  min-width: 0;
 }
 
 .field-wrap select.field {

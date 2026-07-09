@@ -154,7 +154,7 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
           <form action={deleteExpenseAction.bind(null, expense.id)}>
             <button
               type="submit"
-              className="rounded-lg p-2 text-[var(--text-muted)] opacity-0 transition-all hover:bg-[var(--negative-soft)] hover:text-[var(--negative)] group-hover:opacity-100"
+              className="delete-on-hover rounded-lg p-2 text-[var(--text-muted)] transition-all hover:bg-[var(--negative-soft)] hover:text-[var(--negative)] focus-visible:opacity-100"
               title="Delete"
             >
               <Trash2 className="h-4 w-4" />
