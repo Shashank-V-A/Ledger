@@ -110,7 +110,7 @@ export async function parseExpenseText(text: string): Promise<ParsedExpense> {
     messages: [
       {
         role: "system",
-        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR.\n\nRules:\n- food_small: tea, coffee, snacks\n- food_dining_out: restaurants, eating outside home\n- food_ordering_in: zomato, swiggy, delivery\n- entertainment: leisure only — movies, games, concerts, streaming (netflix/spotify)\n- miscellaneous: hackathons, registrations, workshops, courses, exam fees, one-off fees, gifts, repairs, and anything that does not clearly fit another category`,
+        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR.\n\nRules:\n- food_small: tea, coffee, snacks\n- food_dining_out: restaurants, eating outside home\n- food_ordering_in: zomato, swiggy, delivery\n- entertainment: movies, games, concerts, streaming (netflix/spotify), and recurring mobile/phone recharge (jio, airtel, prepaid, postpaid)\n- miscellaneous: hackathons, registrations, workshops, courses, exam fees, one-off fees, gifts, repairs, and anything that does not clearly fit another category`,
       },
       { role: "user", content: text },
     ],
