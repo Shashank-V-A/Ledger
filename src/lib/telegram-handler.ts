@@ -1,4 +1,4 @@
-import { parseExpenseText } from "@/lib/ai";
+import { parseAmountAndDescription } from "@/lib/ai";
 import {
   CATEGORY_LIST,
   formatCurrency,
@@ -9,11 +9,8 @@ import {
 } from "@/lib/categories";
 import {
   createExpense,
-  deleteExpense,
   deleteLastExpense,
-  getExpenseById,
   getExpensesForDateRange,
-  updateExpense,
 } from "@/lib/expenses";
 import {
   answerCallbackQuery,
@@ -41,6 +38,40 @@ interface TelegramUpdate {
       text?: string;
     };
   };
+}
+
+type PendingExpense = {
+  amount: number;
+  description: string;
+  createdAt: number;
+};
+
+const PENDING_TTL_MS = 15 * 60 * 1000;
+
+const pendingByUser =
+  (globalThis as unknown as { __ledgerPending?: Map<number, PendingExpense> })
+    .__ledgerPending ?? new Map<number, PendingExpense>();
+
+(
+  globalThis as unknown as { __ledgerPending?: Map<number, PendingExpense> }
+).__ledgerPending = pendingByUser;
+
+function setPending(userId: number, pending: Omit<PendingExpense, "createdAt">) {
+  pendingByUser.set(userId, { ...pending, createdAt: Date.now() });
+}
+
+function getPending(userId: number): PendingExpense | null {
+  const pending = pendingByUser.get(userId);
+  if (!pending) return null;
+  if (Date.now() - pending.createdAt > PENDING_TTL_MS) {
+    pendingByUser.delete(userId);
+    return null;
+  }
+  return pending;
+}
+
+function clearPending(userId: number) {
+  pendingByUser.delete(userId);
 }
 
 function summarizeRange(
@@ -75,23 +106,22 @@ function summarizeRange(
   return lines.join("\n");
 }
 
-function categoryCorrectionKeyboard(
-  expenseId: string,
-  currentCategory: CategoryId
-): InlineKeyboard {
-  const buttons = CATEGORY_LIST.filter((c) => c.id !== currentCategory).map(
-    (c) => ({
-      text: c.shortLabel,
-      callback_data: `c:${expenseId}:${c.id}`,
-    })
-  );
+function categoryPickKeyboard(): InlineKeyboard {
+  const buttons = CATEGORY_LIST.map((c) => ({
+    text: c.shortLabel,
+    callback_data: `pick:${c.id}`,
+  }));
 
   const rows: { text: string; callback_data: string }[][] = [];
   for (let i = 0; i < buttons.length; i += 2) {
     rows.push(buttons.slice(i, i + 2));
   }
-  rows.push([{ text: "↩️ Undo", callback_data: `u:${expenseId}` }]);
+  rows.push([{ text: "✕ Cancel", callback_data: "cancel" }]);
   return { inline_keyboard: rows };
+}
+
+function chooseCategoryMessage(amount: number, description: string) {
+  return `💰 ${formatCurrency(amount)}${description !== "Expense" ? `\n📝 ${description}` : ""}\n\nPick a category:`;
 }
 
 function loggedMessage(
@@ -105,20 +135,17 @@ function loggedMessage(
 
 const HELP_TEXT = `💰 Expense Tracker Bot
 
-Just type your expense naturally:
+Type an amount (optional note), then pick a category:
+• 200
+• 200/- Snack
 • 120 lunch zomato
 • fuel 2500
-• tea 40
-• shoes 3200 myntra
-• 380 mobile recharge
 
 Commands:
 • today — today's summary
 • this week — weekly summary
 • undo — delete last entry
 • help — show this message
-
-After logging, tap a category button to reclassify, or Undo to remove.
 
 Categories: Dining Out, Ordering In, Tea & Snacks, Investments, Entertainment, Fuel/Transport, Clothing, Miscellaneous`;
 
@@ -140,55 +167,54 @@ async function handleCallbackQuery(
     return;
   }
 
-  if (data.startsWith("u:")) {
-    const id = data.slice(2);
-    const expense = await getExpenseById(id);
-    if (!expense) {
-      await answerCallbackQuery(callback.id, "Already removed");
-      await editTelegramMessage(chatId, messageId, "↩️ Entry already removed");
-      return;
-    }
-    await deleteExpense(id);
-    await answerCallbackQuery(callback.id, "Removed");
-    await editTelegramMessage(
-      chatId,
-      messageId,
-      `↩️ Removed: ${formatCurrency(Number(expense.amount))} — ${getCategoryLabel(expense.category)} (${expense.description ?? "no description"})`
-    );
+  if (data === "cancel") {
+    clearPending(userId);
+    await answerCallbackQuery(callback.id, "Cancelled");
+    await editTelegramMessage(chatId, messageId, "✕ Cancelled — nothing logged");
     return;
   }
 
-  if (data.startsWith("c:")) {
-    const parts = data.split(":");
-    const id = parts[1];
-    const category = parts[2];
-    if (!id || !isValidCategory(category)) {
+  if (data.startsWith("pick:")) {
+    const category = data.slice(5);
+    if (!isValidCategory(category)) {
       await answerCallbackQuery(callback.id, "Invalid category");
       return;
     }
 
-    const expense = await getExpenseById(id);
-    if (!expense) {
-      await answerCallbackQuery(callback.id, "Entry not found");
-      await editTelegramMessage(chatId, messageId, "↩️ Entry no longer exists");
+    const pending = getPending(userId);
+    if (!pending) {
+      await answerCallbackQuery(callback.id, "Expired — send amount again");
+      await editTelegramMessage(
+        chatId,
+        messageId,
+        "⏱ Session expired. Send the amount again to log."
+      );
       return;
     }
 
-    const updated = await updateExpense(id, { category });
+    const expense = await createExpense({
+      amount: pending.amount,
+      category,
+      description: pending.description,
+      source: "telegram",
+      telegram_user_id: userId,
+    });
+
+    clearPending(userId);
     await answerCallbackQuery(
       callback.id,
-      `Moved to ${getCategoryLabel(category)}`
+      `Logged under ${getCategoryLabel(category)}`
     );
+    // Edit message to confirmation and clear the category buttons
     await editTelegramMessage(
       chatId,
       messageId,
       loggedMessage(
-        Number(updated.amount),
-        updated.category,
-        updated.description ?? "Expense",
-        updated.expense_date
-      ),
-      { reply_markup: categoryCorrectionKeyboard(id, category) }
+        pending.amount,
+        category,
+        pending.description,
+        expense.expense_date
+      )
     );
     return;
   }
@@ -267,32 +293,26 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
   }
 
   try {
-    const parsed = await parseExpenseText(text);
-    const expense = await createExpense({
-      amount: parsed.amount,
-      category: parsed.category,
-      description: parsed.description,
-      source: "telegram",
-      telegram_user_id: userId,
-    });
+    const draft = parseAmountAndDescription(text);
+    if (!draft) {
+      await sendTelegramMessage(
+        chatId,
+        `❌ Could not detect an amount.\n\nTry: "200" or "200/- Snack" or type help`
+      );
+      return;
+    }
 
+    setPending(userId, draft);
     await sendTelegramMessage(
       chatId,
-      loggedMessage(
-        parsed.amount,
-        parsed.category,
-        parsed.description,
-        expense.expense_date
-      ),
-      {
-        reply_markup: categoryCorrectionKeyboard(expense.id, parsed.category),
-      }
+      chooseCategoryMessage(draft.amount, draft.description),
+      { reply_markup: categoryPickKeyboard() }
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Could not parse expense";
     await sendTelegramMessage(
       chatId,
-      `❌ ${msg}\n\nTry: "120 lunch zomato" or type help`
+      `❌ ${msg}\n\nTry: "200" or "200/- Snack" or type help`
     );
   }
 }

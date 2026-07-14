@@ -39,7 +39,7 @@ function guessCategoryFromKeywords(text: string): {
   return { category: "miscellaneous", matched: false };
 }
 
-function cleanDescription(text: string, amount: number): string {
+export function cleanDescription(text: string, amount: number): string {
   return (
     text
       .replace(/(?:rs\.?|inr|₹)\s*[\d,]+(?:\.\d{1,2})?/gi, "")
@@ -52,7 +52,7 @@ function cleanDescription(text: string, amount: number): string {
   );
 }
 
-function parseAmount(text: string): number | null {
+export function parseAmount(text: string): number | null {
   const patterns = [
     /(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i,
     /([\d,]+(?:\.\d{1,2})?)\s*(?:rs\.?|inr|₹)/i,
@@ -68,6 +68,15 @@ function parseAmount(text: string): number | null {
     }
   }
   return null;
+}
+
+/** Parse amount + optional description without assigning a category. */
+export function parseAmountAndDescription(
+  text: string
+): { amount: number; description: string } | null {
+  const amount = parseAmount(text);
+  if (!amount) return null;
+  return { amount, description: cleanDescription(text, amount) };
 }
 
 function ruleBasedParse(

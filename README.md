@@ -13,8 +13,7 @@ Personal expense tracker with a web dashboard, Telegram logging, AI insights, an
   - Fuel / Transport
   - Clothing & Accessories
   - Miscellaneous
-- **Telegram bot** — log expenses in natural language (`120 lunch zomato`, `tea 40`, `fuel 2500`)
-- **Inline category corrections** — reclassify or undo right after logging
+- **Telegram bot** — type amount (optional note), then pick a category from buttons
 - **Commands**: `today`, `this week`, `undo`, `help`
 - **Web dashboard** — charts, spent vs invested split, expense list with edit/search, month picker
 - **Password lock** — optional `DASHBOARD_PASSWORD` for the web UI
@@ -82,11 +81,9 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 
 | Message | Action |
 |---------|--------|
-| `120 lunch zomato` | Log ₹120 under Ordering In |
-| `tea 40` | Log ₹40 under Tea, Coffee & Snacks |
-| `sip 5000 groww` | Log under Investments |
-| `380 mobile recharge` | Log under Entertainment |
-| Tap category buttons | Reclassify the just-logged expense |
+| `200` or `200/- Snack` | Ask for category, then log on tap |
+| Tap a category | Saves the expense and removes the buttons |
+| `✕ Cancel` | Drops the draft, nothing logged |
 | `today` | Today's spending summary (spent vs invested) |
 | `this week` | Weekly summary |
 | `undo` | Delete last entry |
