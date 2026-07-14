@@ -27,6 +27,7 @@ export async function addExpenseAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/expenses");
+  revalidatePath("/categories");
 }
 
 export async function updateExpenseAction(formData: FormData) {
@@ -36,15 +37,19 @@ export async function updateExpenseAction(formData: FormData) {
   const description = String(formData.get("description") || "");
   const expense_date = String(formData.get("expense_date"));
 
+  if (!id || !amount || amount <= 0) throw new Error("Invalid expense");
+
   await updateExpense(id, { amount, category, description, expense_date });
   revalidatePath("/");
   revalidatePath("/expenses");
+  revalidatePath("/categories");
 }
 
 export async function deleteExpenseAction(id: string) {
   await deleteExpense(id);
   revalidatePath("/");
   revalidatePath("/expenses");
+  revalidatePath("/categories");
 }
 
 export async function saveBudgetAction(formData: FormData) {

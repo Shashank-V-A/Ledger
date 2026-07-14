@@ -1,5 +1,6 @@
 "use client";
 
+import { logoutAction } from "@/app/login/actions";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,8 +10,10 @@ const links = [
   { href: "/expenses", label: "Expenses", icon: "≡" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ showLogout = false }: { showLogout?: boolean }) {
   const pathname = usePathname();
+
+  if (pathname === "/login") return null;
 
   return (
     <>
@@ -57,6 +60,16 @@ export function Sidebar() {
             <br />
             <span className="text-[var(--mint)]">@Expense_va_automationBot</span>
           </p>
+          {showLogout && (
+            <form action={logoutAction} className="mt-3">
+              <button
+                type="submit"
+                className="text-[11px] font-medium text-[var(--mint)]/80 underline-offset-2 hover:text-white hover:underline"
+              >
+                Lock dashboard
+              </button>
+            </form>
+          )}
         </div>
       </aside>
 

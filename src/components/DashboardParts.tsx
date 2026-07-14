@@ -1,11 +1,9 @@
-import { deleteExpenseAction } from "@/app/actions";
 import {
-  formatCurrency,
   getCategoryColor,
   getCategoryLabel,
 } from "@/lib/categories";
-import type { AIInsight, Expense } from "@/types";
-import { Trash2, TrendingDown, TrendingUp, Sparkles } from "lucide-react";
+import type { AIInsight } from "@/types";
+import { TrendingDown, TrendingUp, Sparkles } from "lucide-react";
 
 export function HeroStat({
   label,
@@ -119,49 +117,3 @@ export function CategoryBadge({ category }: { category: string }) {
   );
 }
 
-export function ExpenseList({ expenses }: { expenses: Expense[] }) {
-  if (!expenses.length) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-sm font-medium text-[var(--text-secondary)]">No expenses yet</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">
-          Log via Telegram or use the form above
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="divide-y divide-[var(--border)]">
-      {expenses.map((expense) => (
-        <div
-          key={expense.id}
-          className="group flex items-center gap-4 py-4 transition-colors hover:bg-[var(--bg-hover)]/60 -mx-2 px-2 rounded-xl"
-        >
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-medium text-[var(--text)]">
-              {expense.description ?? "—"}
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <CategoryBadge category={expense.category} />
-              <span className="text-xs text-[var(--text-muted)]">{expense.expense_date}</span>
-              <span className="text-xs capitalize text-[var(--text-muted)]">· {expense.source}</span>
-            </div>
-          </div>
-          <p className="stat-value shrink-0 text-lg text-[var(--teal)]">
-            {formatCurrency(Number(expense.amount))}
-          </p>
-          <form action={deleteExpenseAction.bind(null, expense.id)}>
-            <button
-              type="submit"
-              className="delete-on-hover rounded-lg p-2 text-[var(--text-muted)] transition-all hover:bg-[var(--negative-soft)] hover:text-[var(--negative)] focus-visible:opacity-100"
-              title="Delete"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </form>
-        </div>
-      ))}
-    </div>
-  );
-}

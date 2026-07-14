@@ -4,19 +4,22 @@ Personal expense tracker with a web dashboard, Telegram logging, AI insights, an
 
 ## Features
 
-- **7 categories** tailored for living at home with parents:
-  - Ordering / Dining Out
+- **8 categories** tailored for living at home with parents:
+  - Dining Out
+  - Ordering In
   - Tea, Coffee & Snacks
   - Investments (tracked separately from spending)
-  - Entertainment
+  - Entertainment (includes mobile recharge)
   - Fuel / Transport
   - Clothing & Accessories
   - Miscellaneous
 - **Telegram bot** — log expenses in natural language (`120 lunch zomato`, `tea 40`, `fuel 2500`)
+- **Inline category corrections** — reclassify or undo right after logging
 - **Commands**: `today`, `this week`, `undo`, `help`
-- **Web dashboard** — charts, monthly totals, expense list, budgets
-- **AI insights** — month-over-month analysis and budget alerts
-- **Monthly PDF report** — auto-sent to Telegram on the 1st of each month
+- **Web dashboard** — charts, spent vs invested split, expense list with edit/search, month picker
+- **Password lock** — optional `DASHBOARD_PASSWORD` for the web UI
+- **AI insights** — month-over-month analysis
+- **PDF reports** — download from the dashboard, or auto-sent to Telegram on the 1st of each month
 
 ## Tech Stack
 
@@ -48,6 +51,8 @@ cp .env.example .env.local
 
 Fill in all values in `.env.local` (see `.env.example` for details).
 
+Set `DASHBOARD_PASSWORD` to lock the web dashboard. Leave it empty for open local access.
+
 ### 4. Run locally
 
 ```bash
@@ -77,10 +82,12 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 
 | Message | Action |
 |---------|--------|
-| `120 lunch zomato` | Log ₹120 under Ordering/Dining |
+| `120 lunch zomato` | Log ₹120 under Ordering In |
 | `tea 40` | Log ₹40 under Tea, Coffee & Snacks |
 | `sip 5000 groww` | Log under Investments |
-| `today` | Today's spending summary |
+| `380 mobile recharge` | Log under Entertainment |
+| Tap category buttons | Reclassify the just-logged expense |
+| `today` | Today's spending summary (spent vs invested) |
 | `this week` | Weekly summary |
 | `undo` | Delete last entry |
 | `help` | Show commands |
@@ -89,12 +96,16 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 
 1. Push to GitHub
 2. Import in Vercel
-3. Add all environment variables
+3. Add all environment variables (including `DASHBOARD_PASSWORD` if you want a lock)
 4. Deploy
 5. Visit `/api/telegram/setup` to register webhook
 6. Vercel Cron runs monthly report on the 1st at 6:00 UTC (configure in `vercel.json`)
 
 ### Manual monthly report
+
+From the dashboard: use **Download PDF** on Overview.
+
+Or via cron endpoint:
 
 ```bash
 curl -H "Authorization: Bearer <CRON_SECRET>" \
@@ -107,16 +118,20 @@ curl -H "Authorization: Bearer <CRON_SECRET>" \
 src/
 ├── app/
 │   ├── page.tsx              # Dashboard
-│   ├── expenses/page.tsx     # Expense list
-│   ├── budgets/page.tsx      # Budget management
+│   ├── expenses/page.tsx     # Expense list (edit / search / delete)
+│   ├── login/                # Dashboard password gate
+│   ├── budgets/page.tsx      # Budget management (scaffold)
 │   └── api/
-│       ├── telegram/webhook  # Telegram bot
+│       ├── telegram/webhook  # Telegram bot + callback buttons
 │       ├── cron/monthly-report
+│       ├── report/           # Manual PDF download
 │       ├── expenses/
 │       ├── budgets/
 │       └── insights/
 ├── components/
+├── middleware.ts             # Dashboard auth
 └── lib/
+    ├── auth.ts
     ├── categories.ts
     ├── expenses.ts
     ├── ai.ts
@@ -126,4 +141,4 @@ src/
 
 ## Categories
 
-Investments are **not** counted in "Total Spent" — they appear separately so you can see both spending and allocation.
+**Investments are not counted in "Total spent"** — they appear as a separate "Invested" total on the dashboard, in Telegram summaries, and in PDF reports.

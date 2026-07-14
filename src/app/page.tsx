@@ -8,13 +8,27 @@ import {
 } from "@/lib/expenses";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
 import { CategoryBreakdown, YearlyBarChart } from "@/components/Charts";
+import { DownloadReportButton } from "@/components/DownloadReportButton";
 import { HeroStat, InsightsList, MiniStat } from "@/components/DashboardParts";
 import { PageHeader } from "@/components/PageHeader";
-import { getDaysInMonth, parseISO } from "date-fns";
+import {
+  format,
+  getDate,
+  getDaysInMonth,
+  parseISO,
+} from "date-fns";
 import Link from "next/link";
 import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
+
+function daysForAverage(month: string): number {
+  const monthStart = parseISO(`${month}-01`);
+  const today = new Date();
+  const isCurrentMonth = format(today, "yyyy-MM") === month;
+  if (isCurrentMonth) return Math.max(1, getDate(today));
+  return getDaysInMonth(monthStart);
+}
 
 async function DashboardContent({ month }: { month: string }) {
   const year = parseInt(month.slice(0, 4), 10);
@@ -56,18 +70,13 @@ async function DashboardContent({ month }: { month: string }) {
     })),
   });
 
-  const expenditureDiff = previous
+  const spentDiff = previous
     ? summary.totalSpent - previous.totalSpent
     : null;
-  const daysInMonth = getDaysInMonth(parseISO(`${month}-01`));
+  const days = daysForAverage(month);
   const avgPerDay = summary.totalSpent
-    ? Math.round(summary.totalSpent / daysInMonth)
+    ? Math.round(summary.totalSpent / days)
     : 0;
-
-  const investmentSub =
-    summary.totalInvested > 0
-      ? `Includes ${formatCurrency(summary.totalInvested)} in investments`
-      : undefined;
 
   return (
     <>
@@ -75,26 +84,30 @@ async function DashboardContent({ month }: { month: string }) {
         month={month}
         title="Overview"
         subtitle={`${summary.expenseCount} transactions this month`}
+        actions={<DownloadReportButton month={month} />}
       />
 
       <div className="mb-6 grid gap-4 lg:grid-cols-12 animate-fade-up" style={{ animationDelay: "0.05s" }}>
         <div className="lg:col-span-7">
           <HeroStat
-            label="Total expenditure"
+            label="Total spent"
             value={formatCurrency(summary.totalSpent)}
-            sub={investmentSub}
+            sub="Excludes investments"
             delta={
-              expenditureDiff !== null
+              spentDiff !== null
                 ? {
-                    amount: `${expenditureDiff >= 0 ? "+" : ""}${formatCurrency(expenditureDiff)}`,
-                    positive: expenditureDiff > 0,
+                    amount: `${spentDiff >= 0 ? "+" : ""}${formatCurrency(spentDiff)}`,
+                    positive: spentDiff > 0,
                   }
                 : null
             }
           />
         </div>
         <div className="grid grid-cols-2 gap-4 lg:col-span-5">
-          <MiniStat label="Transactions" value={String(summary.expenseCount)} />
+          <MiniStat
+            label="Invested"
+            value={formatCurrency(summary.totalInvested)}
+          />
           <MiniStat label="Daily average" value={formatCurrency(avgPerDay)} />
         </div>
       </div>
@@ -104,7 +117,9 @@ async function DashboardContent({ month }: { month: string }) {
           <div className="panel-header flex items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold text-[var(--text)]">By category</h2>
-              <p className="mt-0.5 text-xs text-[var(--text-muted)]">All spending including investments</p>
+              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                Spending and investments
+              </p>
             </div>
             <Link
               href={`/categories?month=${month}`}
@@ -121,7 +136,9 @@ async function DashboardContent({ month }: { month: string }) {
         <section className="panel">
           <div className="panel-header">
             <h2 className="text-sm font-semibold text-[var(--text)]">{year} at a glance</h2>
-            <p className="mt-0.5 text-xs text-[var(--text-muted)]">Monthly expenditure trend</p>
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+              Monthly spending (excl. investments)
+            </p>
           </div>
           <div className="panel-body">
             <YearlyBarChart data={yearly} />

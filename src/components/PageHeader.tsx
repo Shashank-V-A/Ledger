@@ -1,14 +1,17 @@
 import { formatMonthLabel } from "@/lib/date-utils";
 import { MonthPicker } from "@/components/MonthPicker";
+import type { ReactNode } from "react";
 
 export function PageHeader({
   title,
   subtitle,
   month,
+  actions,
 }: {
   title: string;
   subtitle?: string;
   month: string;
+  actions?: ReactNode;
 }) {
   return (
     <header className="mb-10 flex flex-wrap items-end justify-between gap-6 animate-fade-up">
@@ -23,7 +26,10 @@ export function PageHeader({
           <p className="mt-2 text-sm text-[var(--text-secondary)]">{subtitle}</p>
         )}
       </div>
-      <MonthPicker month={month} />
+      <div className="flex flex-wrap items-center gap-3">
+        {actions}
+        <MonthPicker month={month} />
+      </div>
     </header>
   );
 }

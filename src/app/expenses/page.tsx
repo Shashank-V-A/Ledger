@@ -1,6 +1,6 @@
 import { getExpenses } from "@/lib/expenses";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
-import { ExpenseList } from "@/components/DashboardParts";
+import { ExpenseList } from "@/components/ExpenseList";
 import { PageHeader } from "@/components/PageHeader";
 import { Suspense } from "react";
 

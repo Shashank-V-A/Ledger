@@ -41,6 +41,18 @@ export async function createExpense(input: {
   return data as Expense;
 }
 
+export async function getExpenseById(id: string): Promise<Expense | null> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as Expense | null) ?? null;
+}
+
 export async function getExpenses(filters?: {
   month?: string;
   category?: CategoryId;
@@ -152,9 +164,10 @@ function summarizeExpenses(expenses: Expense[]): MonthlySummary {
     entry.total += amount;
     entry.count += 1;
 
-    totalSpent += amount;
     if (isInvestmentCategory(category)) {
       totalInvested += amount;
+    } else {
+      totalSpent += amount;
     }
   }
 
@@ -233,9 +246,10 @@ export async function getYearlyData(year: number) {
     if (!months[monthKey]) continue;
     const amount = Number(expense.amount);
     months[monthKey].expenseCount += 1;
-    months[monthKey].totalSpent += amount;
     if (isInvestmentCategory(expense.category)) {
       months[monthKey].totalInvested += amount;
+    } else {
+      months[monthKey].totalSpent += amount;
     }
   }
 

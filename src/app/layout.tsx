@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/Sidebar";
+import { isAuthEnabled } from "@/lib/auth";
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
@@ -25,6 +26,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const showLogout = isAuthEnabled();
+
   return (
     <html
       lang="en"
@@ -32,7 +35,7 @@ export default function RootLayout({
     >
       <body className="relative min-h-full">
         <div className="relative z-10 flex min-h-screen">
-          <Sidebar />
+          <Sidebar showLogout={showLogout} />
           <main className="flex-1 overflow-x-hidden pb-20 lg:pb-0">
             <div className="mx-auto max-w-5xl px-6 py-10 lg:px-10 lg:py-12">
               {children}

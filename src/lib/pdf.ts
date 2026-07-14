@@ -89,7 +89,7 @@ function drawHeader(
 
   // Summary stat boxes
   const stats: { label: string; value: string }[] = [
-    { label: "Total Expenditure", value: formatPdfCurrency(summary.totalSpent) },
+    { label: "Total Spent", value: formatPdfCurrency(summary.totalSpent) },
     { label: "Transactions", value: String(summary.expenseCount) },
   ];
 
