@@ -18,7 +18,7 @@ export function HeroStat({
 }) {
   return (
     <div className="panel p-6 lg:p-8">
-      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">
+      <p className="inline-block border-[2px] border-[var(--ink)] bg-[var(--lime)] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-[var(--ink)]">
         {label}
       </p>
       <p className="stat-value mt-3 text-4xl text-[var(--text)] lg:text-5xl">{value}</p>
@@ -55,10 +55,10 @@ export function MiniStat({ label, value }: { label: string; value: string }) {
 export function InsightsList({ insights }: { insights: AIInsight[] }) {
   if (!insights.length) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border-strong)] py-12 text-center">
-        <Sparkles className="mb-3 h-6 w-6 text-[var(--accent)] opacity-60" />
-        <p className="text-sm font-medium text-[var(--text-secondary)]">No insights yet</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">
+      <div className="flex flex-col items-center justify-center border-[3px] border-dashed border-[var(--ink)] bg-white py-12 text-center shadow-[3px_3px_0_var(--ink)]">
+        <Sparkles className="mb-3 h-6 w-6 text-[var(--slap)]" strokeWidth={2.5} />
+        <p className="text-sm font-extrabold uppercase text-[var(--text)]">No insights yet</p>
+        <p className="mt-1 text-xs font-semibold text-[var(--text-muted)]">
           Log a few more expenses to unlock patterns
         </p>
       </div>

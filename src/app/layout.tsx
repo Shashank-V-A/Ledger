@@ -1,19 +1,19 @@
 import { Sidebar } from "@/components/Sidebar";
 import { isAuthEnabled } from "@/lib/auth";
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
+import { Space_Grotesk, Syne } from "next/font/google";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+const syne = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const space = Space_Grotesk({
+  variable: "--font-space",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bricolage.variable} ${dmSans.variable} h-full`}
+      className={`${syne.variable} ${space.variable} h-full`}
     >
       <body className="relative min-h-full">
         <div className="relative z-10 flex min-h-screen">

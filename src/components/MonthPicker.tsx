@@ -21,30 +21,30 @@ export function MonthPicker({ month }: { month: string }) {
   }
 
   return (
-      <div className="flex items-center gap-1 rounded-xl border border-[var(--border-strong)] bg-white px-1 py-1 shadow-sm">
+    <div className="flex items-center gap-0 border-[3px] border-[var(--ink)] bg-white shadow-[3px_3px_0_var(--ink)]">
       <button
         type="button"
         onClick={() => shift(-1)}
-        className="btn-ghost !p-2"
+        className="border-r-[3px] border-[var(--ink)] bg-white p-2 font-bold hover:bg-[var(--lime)]"
         aria-label="Previous month"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-4 w-4" strokeWidth={3} />
       </button>
-      <div className="month-picker-field">
+      <div className="month-picker-field px-1">
         <input
           type="month"
           value={month}
           onChange={(e) => navigate(e.target.value)}
-          className="field !border-none !bg-transparent !px-2 text-sm font-semibold !shadow-none focus:!shadow-none"
+          className="field !border-none !bg-transparent !px-2 text-sm font-bold !shadow-none focus:!shadow-none focus:!transform-none"
         />
       </div>
       <button
         type="button"
         onClick={() => shift(1)}
-        className="btn-ghost !p-2"
+        className="border-l-[3px] border-[var(--ink)] bg-white p-2 font-bold hover:bg-[var(--lime)]"
         aria-label="Next month"
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-4 w-4" strokeWidth={3} />
       </button>
     </div>
   );

@@ -3,7 +3,7 @@ export const CATEGORIES = {
     id: "food_dining_out",
     label: "Dining Out",
     shortLabel: "Dining",
-    color: "#e85d4c",
+    color: "#FF3B1F",
     isInvestment: false,
     keywords: [
       "restaurant",
@@ -37,7 +37,7 @@ export const CATEGORIES = {
     id: "food_ordering_in",
     label: "Ordering In",
     shortLabel: "Delivery",
-    color: "#f59e0b",
+    color: "#FFB800",
     isInvestment: false,
     keywords: [
       "zomato",
@@ -61,7 +61,7 @@ export const CATEGORIES = {
     id: "food_small",
     label: "Tea, Coffee & Snacks",
     shortLabel: "Snacks",
-    color: "#d4a853",
+    color: "#E8A317",
     isInvestment: false,
     keywords: [
       "tea",
@@ -80,7 +80,7 @@ export const CATEGORIES = {
     id: "investments",
     label: "Investments",
     shortLabel: "Invest",
-    color: "#34d399",
+    color: "#0B7A3B",
     isInvestment: true,
     keywords: [
       "sip",
@@ -99,7 +99,7 @@ export const CATEGORIES = {
     id: "entertainment",
     label: "Entertainment",
     shortLabel: "Fun",
-    color: "#a78bfa",
+    color: "#FF5A1F",
     isInvestment: false,
     keywords: [
       "movie",
@@ -124,7 +124,7 @@ export const CATEGORIES = {
     id: "fuel_transport",
     label: "Fuel / Transport",
     shortLabel: "Transport",
-    color: "#60a5fa",
+    color: "#0066FF",
     isInvestment: false,
     keywords: [
       "fuel",
@@ -144,7 +144,7 @@ export const CATEGORIES = {
     id: "clothing",
     label: "Clothing & Accessories",
     shortLabel: "Clothing",
-    color: "#f472b6",
+    color: "#E6007A",
     isInvestment: false,
     keywords: [
       "clothes",
@@ -166,7 +166,7 @@ export const CATEGORIES = {
     id: "miscellaneous",
     label: "Miscellaneous",
     shortLabel: "Other",
-    color: "#71717a",
+    color: "#0A0A0A",
     isInvestment: false,
     keywords: [
       "hackathon",

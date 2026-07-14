@@ -43,7 +43,7 @@ export function CategoryDetailList({
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="h-3 w-3 rounded-full shrink-0"
+                  className="h-3 w-3 shrink-0 border-[2px] border-[var(--ink)]"
                   style={{ background: color }}
                 />
                 <div>
@@ -55,7 +55,7 @@ export function CategoryDetailList({
                   </p>
                 </div>
               </div>
-              <p className="stat-value text-2xl text-[var(--teal-dark)]">
+              <p className="stat-value text-2xl text-[var(--ink)]">
                 {formatCurrency(group.total)}
               </p>
             </div>
@@ -76,7 +76,7 @@ export function CategoryDetailList({
                       <span className="capitalize">{expense.source}</span>
                     </p>
                   </div>
-                  <p className="stat-value shrink-0 text-base text-[var(--teal)]">
+                  <p className="stat-value shrink-0 text-base text-[var(--ink)]">
                     {formatCurrency(Number(expense.amount))}
                   </p>
                 </div>

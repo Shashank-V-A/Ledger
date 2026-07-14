@@ -19,20 +19,20 @@ export default async function LoginPage({
     <div className="flex min-h-[70vh] items-center justify-center">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--teal)] font-[family-name:var(--font-bricolage)] text-lg font-bold text-white">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center border-[3px] border-[var(--ink)] bg-[var(--ink)] font-[family-name:var(--font-syne)] text-2xl font-extrabold text-[var(--lime)] shadow-[4px_4px_0_var(--ink)]">
             L
           </div>
-          <h1 className="font-[family-name:var(--font-bricolage)] text-2xl font-semibold text-[var(--text)]">
+          <h1 className="font-[family-name:var(--font-syne)] text-3xl font-extrabold uppercase tracking-tight text-[var(--text)]">
             Ledger
           </h1>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
+          <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
             Enter password to continue
           </p>
         </div>
 
         <form action={loginAction} className="panel p-6">
           <input type="hidden" name="next" value={next} />
-          <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
+          <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-[var(--text)]">
             Password
           </label>
           <input
@@ -45,7 +45,7 @@ export default async function LoginPage({
             placeholder="••••••••"
           />
           {hasError && (
-            <p className="mt-2 text-sm text-[var(--negative)]">
+            <p className="mt-2 text-sm font-bold text-[var(--negative)]">
               Incorrect password
             </p>
           )}

@@ -141,7 +141,7 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
             ) : (
               <div
                 key={expense.id}
-                className="group flex items-center gap-3 py-4 transition-colors hover:bg-[var(--bg-hover)]/60 -mx-2 px-2 rounded-xl sm:gap-4"
+                className="group flex items-center gap-3 border-l-[3px] border-transparent py-4 transition-colors hover:border-[var(--ink)] hover:bg-[var(--bg-hover)] -mx-2 px-2 sm:gap-4"
               >
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-medium text-[var(--text)]">
@@ -157,13 +157,13 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
                     </span>
                   </div>
                 </div>
-                <p className="stat-value shrink-0 text-lg text-[var(--teal)]">
+                <p className="stat-value shrink-0 text-lg text-[var(--ink)]">
                   {formatCurrency(Number(expense.amount))}
                 </p>
                 <div className="flex shrink-0 items-center gap-0.5">
                   <button
                     type="button"
-                    className="delete-on-hover rounded-lg p-2 text-[var(--text-muted)] transition-all hover:bg-[var(--mint)] hover:text-[var(--teal)]"
+                    className="delete-on-hover border-[2px] border-transparent p-2 text-[var(--text-muted)] transition-all hover:border-[var(--ink)] hover:bg-[var(--lime)] hover:text-[var(--ink)]"
                     title="Edit"
                     onClick={() => setEditingId(expense.id)}
                   >
@@ -171,7 +171,7 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
                   </button>
                   <button
                     type="button"
-                    className="delete-on-hover rounded-lg p-2 text-[var(--text-muted)] transition-all hover:bg-[var(--negative-soft)] hover:text-[var(--negative)]"
+                    className="delete-on-hover border-[2px] border-transparent p-2 text-[var(--text-muted)] transition-all hover:border-[var(--ink)] hover:bg-[var(--negative)] hover:text-white"
                     title="Delete"
                     disabled={pending}
                     onClick={() => {

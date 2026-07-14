@@ -12,12 +12,12 @@ export function BudgetForm({
         <form
           key={cat.id}
           action={saveBudgetAction}
-          className="flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3.5 transition-colors hover:border-[var(--border-strong)]"
+          className="flex flex-wrap items-center gap-4 border-[3px] border-[var(--ink)] bg-white px-4 py-3.5 shadow-[3px_3px_0_var(--ink)]"
         >
           <input type="hidden" name="category" value={cat.id} />
           <div className="flex min-w-[180px] flex-1 items-center gap-3">
             <span
-              className="h-2 w-2 rounded-full shrink-0"
+              className="h-3 w-3 shrink-0 border-[2px] border-[var(--ink)]"
               style={{ background: getCategoryColor(cat.id) }}
             />
             <div>

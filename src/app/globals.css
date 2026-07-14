@@ -1,49 +1,60 @@
 @import "tailwindcss";
 
 :root {
-  /* Palette */
-  --mint: #dbe8d8;
-  --teal: #01949a;
-  --teal-dark: #014b4e;
-  --teal-mid: #017a7f;
-  --teal-light: #e6f5f5;
+  /* Brutal ledger palette — ink + cash lime + paper */
+  --ink: #0a0a0a;
+  --paper: #fffdf2;
+  --lime: #c8f04d;
+  --lime-deep: #a8d12e;
+  --slap: #ff5a1f;
+  --slap-soft: rgba(255, 90, 31, 0.12);
+
+  /* Legacy aliases used across components */
+  --mint: var(--lime);
+  --teal: var(--ink);
+  --teal-dark: var(--ink);
+  --teal-mid: #2a2a2a;
+  --teal-light: #f0fad0;
 
   /* Surfaces */
-  --bg: var(--mint);
-  --bg-elevated: #ffffff;
-  --bg-card: #ffffff;
-  --bg-hover: #eef5ec;
-  --sidebar: var(--teal);
+  --bg: var(--lime);
+  --bg-elevated: var(--paper);
+  --bg-card: var(--paper);
+  --bg-hover: #eef8b8;
+  --sidebar: var(--ink);
 
   /* Borders */
-  --border: rgba(1, 148, 154, 0.18);
-  --border-strong: rgba(1, 148, 154, 0.32);
+  --border: var(--ink);
+  --border-strong: var(--ink);
+  --border-w: 3px;
+  --shadow-hard: 4px 4px 0 var(--ink);
+  --shadow-hard-sm: 3px 3px 0 var(--ink);
 
   /* Text */
-  --text: var(--teal-dark);
-  --text-secondary: var(--teal-mid);
-  --text-muted: #4a8f93;
-  --text-on-teal: #ffffff;
-  --text-on-teal-muted: rgba(219, 232, 216, 0.85);
+  --text: var(--ink);
+  --text-secondary: #2a2a2a;
+  --text-muted: #4a4a4a;
+  --text-on-teal: var(--lime);
+  --text-on-teal-muted: rgba(200, 240, 77, 0.7);
 
   /* Accents */
-  --accent: var(--teal);
-  --accent-soft: rgba(1, 148, 154, 0.1);
-  --accent-warm: var(--teal);
-  --positive: #018a5e;
-  --positive-soft: rgba(1, 138, 94, 0.1);
-  --negative: #d64545;
-  --negative-soft: rgba(214, 69, 69, 0.08);
-  --warning: #c98b1a;
-  --warning-soft: rgba(201, 139, 26, 0.1);
-  --glow: rgba(1, 148, 154, 0.06);
+  --accent: var(--slap);
+  --accent-soft: var(--slap-soft);
+  --accent-warm: var(--slap);
+  --positive: #0b7a3b;
+  --positive-soft: rgba(11, 122, 59, 0.12);
+  --negative: #e10600;
+  --negative-soft: rgba(225, 6, 0, 0.1);
+  --warning: #e6a100;
+  --warning-soft: rgba(230, 161, 0, 0.15);
+  --glow: transparent;
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
-  --font-sans: var(--font-dm-sans);
-  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-space);
+  --font-display: var(--font-syne);
 }
 
 * {
@@ -57,18 +68,23 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  font-family: var(--font-space), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Diagonal hatch — raw brutal texture */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 0% 0%, var(--glow), transparent),
-    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(219, 232, 216, 0.6), transparent);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 12px,
+    rgba(10, 10, 10, 0.04) 12px,
+    rgba(10, 10, 10, 0.04) 13px
+  );
   pointer-events: none;
   z-index: 0;
 }
@@ -81,49 +97,53 @@ textarea {
 }
 
 ::selection {
-  background: rgba(1, 148, 154, 0.25);
-  color: var(--teal-dark);
+  background: var(--ink);
+  color: var(--lime);
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--lime);
+  border-left: 2px solid var(--ink);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(1, 148, 154, 0.3);
-  border-radius: 3px;
+  background: var(--ink);
+  border: 2px solid var(--lime);
 }
 
 .field {
   width: 100%;
-  border-radius: 10px;
-  border: 1.5px solid var(--border-strong);
+  border-radius: 0;
+  border: var(--border-w) solid var(--ink);
   background: #ffffff;
   color: var(--text);
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  font-weight: 500;
+  transition: transform 0.1s, box-shadow 0.1s;
   outline: none;
+  box-shadow: none;
 }
 .field:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--ink);
+  box-shadow: var(--shadow-hard-sm);
+  transform: translate(-1px, -1px);
 }
 .field::placeholder {
   color: var(--text-muted);
+  font-weight: 400;
 }
 
-/* Select & date inputs — custom arrow inside the box */
 select.field {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
   padding-right: 2.5rem;
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2301949a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230a0a0a' stroke-width='3' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 1rem;
@@ -154,7 +174,7 @@ input[type="month"].field::-webkit-calendar-picker-indicator {
   width: 1.125rem;
   height: 1.125rem;
   cursor: pointer;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 .month-picker-field {
@@ -193,22 +213,27 @@ input[type="month"].field::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 10px;
-  background: var(--teal);
-  color: #ffffff;
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--lime);
   font-size: 0.875rem;
-  font-weight: 600;
-  padding: 0.625rem 1.25rem;
-  border: none;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.7rem 1.25rem;
+  border: var(--border-w) solid var(--ink);
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-  box-shadow: 0 2px 8px rgba(1, 148, 154, 0.25);
+  transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+  box-shadow: var(--shadow-hard);
 }
 .btn-primary:hover {
-  background: var(--teal-mid);
+  background: var(--slap);
+  color: #ffffff;
+  border-color: var(--ink);
 }
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
 }
 
 .btn-ghost {
@@ -216,96 +241,103 @@ input[type="month"].field::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 10px;
+  border-radius: 0;
   background: #ffffff;
-  color: var(--teal-mid);
+  color: var(--ink);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 700;
   padding: 0.5rem 0.875rem;
-  border: 1.5px solid var(--border-strong);
+  border: var(--border-w) solid var(--ink);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+  box-shadow: var(--shadow-hard-sm);
 }
 .btn-ghost:hover {
-  background: var(--teal-light);
-  color: var(--teal-dark);
-  border-color: var(--teal);
+  background: var(--lime);
+  color: var(--ink);
+}
+.btn-ghost:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
 }
 
 .panel {
-  border-radius: 16px;
-  border: 1.5px solid var(--border);
+  border-radius: 0;
+  border: var(--border-w) solid var(--ink);
   background: var(--bg-card);
-  box-shadow: 0 2px 12px rgba(1, 75, 78, 0.06);
+  box-shadow: var(--shadow-hard);
 }
 
 .panel-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(to bottom, #ffffff, #fafdf9);
+  padding: 1rem 1.25rem;
+  border-bottom: var(--border-w) solid var(--ink);
+  background: #ffffff;
 }
 
 .panel-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .stat-value {
-  font-family: var(--font-bricolage), system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--font-syne), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   line-height: 1;
-  color: var(--teal-dark);
+  color: var(--ink);
 }
 
 .category-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  border-radius: 999px;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  background: var(--teal-light);
-  color: var(--teal-mid);
+  border-radius: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 2px solid var(--ink);
+  background: #ffffff;
+  color: var(--ink);
 }
 
 .category-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+  border: 1.5px solid var(--ink);
   flex-shrink: 0;
 }
 
 .insight-card {
-  border-radius: 14px;
-  border: 1.5px solid var(--border);
+  border-radius: 0;
+  border: var(--border-w) solid var(--ink);
   background: #ffffff;
   padding: 1.125rem 1.25rem;
-  transition: box-shadow 0.15s, border-color 0.15s;
-  box-shadow: 0 1px 6px rgba(1, 75, 78, 0.05);
+  box-shadow: var(--shadow-hard-sm);
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 .insight-card:hover {
-  border-color: var(--teal);
-  box-shadow: 0 4px 16px rgba(1, 148, 154, 0.1);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
 }
 .insight-card--warning {
-  border-left: 4px solid var(--negative);
-  background: linear-gradient(135deg, #fff8f8, #ffffff);
+  border-left: 8px solid var(--negative);
+  background: #fff5f4;
 }
 .insight-card--positive {
-  border-left: 4px solid var(--positive);
-  background: linear-gradient(135deg, #f0faf5, #ffffff);
+  border-left: 8px solid var(--positive);
+  background: #f0fff4;
 }
 .insight-card--neutral {
-  border-left: 4px solid var(--teal);
-  background: linear-gradient(135deg, var(--teal-light), #ffffff);
+  border-left: 8px solid var(--slap);
+  background: #fff8f4;
 }
 
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -314,5 +346,5 @@ input[type="month"].field::-webkit-calendar-picker-indicator {
 }
 
 .animate-fade-up {
-  animation: fade-up 0.4s ease-out both;
+  animation: fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }

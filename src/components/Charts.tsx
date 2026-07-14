@@ -29,9 +29,9 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-[var(--border-strong)] bg-[var(--bg-card)] px-3 py-2 text-xs shadow-xl">
-      <p className="text-[var(--text-muted)]">{label}</p>
-      <p className="mt-0.5 font-semibold text-[var(--text)]">
+    <div className="border-[3px] border-[var(--ink)] bg-white px-3 py-2 text-xs shadow-[3px_3px_0_var(--ink)]">
+      <p className="font-bold uppercase text-[var(--text-muted)]">{label}</p>
+      <p className="mt-0.5 font-extrabold text-[var(--text)]">
         {formatCurrency(payload[0].value)}
       </p>
     </div>
@@ -47,7 +47,7 @@ export function CategoryBreakdown({ data }: { data: CategorySummary[] }) {
 
   if (!items.length) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-[var(--text-muted)]">
+      <div className="flex h-48 items-center justify-center border-[3px] border-dashed border-[var(--ink)] text-sm font-bold uppercase text-[var(--text-muted)]">
         No spending recorded yet
       </div>
     );
@@ -61,18 +61,21 @@ export function CategoryBreakdown({ data }: { data: CategorySummary[] }) {
         return (
           <div key={item.category}>
             <div className="mb-1.5 flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-[var(--text-secondary)]">
-                <span className="category-dot" style={{ background: color }} />
+              <span className="flex items-center gap-2 font-bold text-[var(--text)]">
+                <span
+                  className="category-dot"
+                  style={{ background: color }}
+                />
                 {getCategoryLabel(item.category)}
               </span>
-              <span className="font-medium text-[var(--text)]">
+              <span className="font-extrabold text-[var(--text)]">
                 {formatCurrency(item.total)}
                 <span className="ml-2 text-[var(--text-muted)]">{pct}%</span>
               </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--mint)]">
+            <div className="h-3 overflow-hidden border-[2px] border-[var(--ink)] bg-white">
               <div
-                className="h-full rounded-full transition-all duration-700"
+                className="h-full transition-all duration-500"
                 style={{ width: `${pct}%`, background: color }}
               />
             </div>
@@ -97,7 +100,7 @@ export function YearlyBarChart({
 
   if (!hasData) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-[var(--text-muted)]">
+      <div className="flex h-48 items-center justify-center border-[3px] border-dashed border-[var(--ink)] text-sm font-bold uppercase text-[var(--text-muted)]">
         No yearly data yet
       </div>
     );
@@ -105,30 +108,32 @@ export function YearlyBarChart({
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={chartData} barSize={20}>
+      <BarChart data={chartData} barSize={22}>
         <CartesianGrid
-          strokeDasharray="3 3"
-          stroke="rgba(1, 148, 154, 0.12)"
+          strokeDasharray="0"
+          stroke="rgba(10, 10, 10, 0.15)"
           vertical={false}
         />
         <XAxis
           dataKey="month"
-          tick={{ fill: "#4a8f93", fontSize: 11 }}
-          axisLine={false}
+          tick={{ fill: "#0a0a0a", fontSize: 11, fontWeight: 700 }}
+          axisLine={{ stroke: "#0a0a0a", strokeWidth: 2 }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#4a8f93", fontSize: 11 }}
-          axisLine={false}
+          tick={{ fill: "#0a0a0a", fontSize: 11, fontWeight: 700 }}
+          axisLine={{ stroke: "#0a0a0a", strokeWidth: 2 }}
           tickLine={false}
           tickFormatter={(v) => (v >= 1000 ? `₹${v / 1000}k` : `₹${v}`)}
           width={48}
         />
-        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(1, 148, 154, 0.06)" }} />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(200, 240, 77, 0.35)" }} />
         <Bar
           dataKey="spent"
-          fill="#01949a"
-          radius={[4, 4, 0, 0]}
+          fill="#0a0a0a"
+          stroke="#0a0a0a"
+          strokeWidth={2}
+          radius={[0, 0, 0, 0]}
         />
       </BarChart>
     </ResponsiveContainer>

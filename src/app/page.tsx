@@ -123,7 +123,7 @@ async function DashboardContent({ month }: { month: string }) {
             </div>
             <Link
               href={`/categories?month=${month}`}
-              className="text-xs font-semibold text-[var(--teal)] hover:underline shrink-0"
+              className="text-xs font-extrabold uppercase tracking-wide text-[var(--slap)] hover:underline shrink-0"
             >
               View details →
             </Link>
@@ -148,7 +148,7 @@ async function DashboardContent({ month }: { month: string }) {
 
       <section className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
         <div className="mb-4">
-          <h2 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-[var(--text)]">
+          <h2 className="font-[family-name:var(--font-syne)] text-xl font-extrabold uppercase tracking-tight text-[var(--text)]">
             Insights
           </h2>
           <p className="mt-0.5 text-sm text-[var(--text-muted)]">
