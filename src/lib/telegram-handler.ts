@@ -107,15 +107,10 @@ function summarizeRange(
 }
 
 function categoryPickKeyboard(): InlineKeyboard {
-  const buttons = CATEGORY_LIST.map((c) => ({
-    text: c.shortLabel,
-    callback_data: `pick:${c.id}`,
-  }));
-
-  const rows: { text: string; callback_data: string }[][] = [];
-  for (let i = 0; i < buttons.length; i += 2) {
-    rows.push(buttons.slice(i, i + 2));
-  }
+  // One row per category so full website labels fit clearly on mobile
+  const rows = CATEGORY_LIST.map((c) => [
+    { text: c.label, callback_data: `pick:${c.id}` },
+  ]);
   rows.push([{ text: "✕ Cancel", callback_data: "cancel" }]);
   return { inline_keyboard: rows };
 }
