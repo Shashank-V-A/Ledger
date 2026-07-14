@@ -108,7 +108,7 @@ function summarizeRange(
 
 function categoryPickKeyboard(): InlineKeyboard {
   // One row per category so full website labels fit clearly on mobile
-  const rows = CATEGORY_LIST.map((c) => [
+  const rows: InlineKeyboard["inline_keyboard"] = CATEGORY_LIST.map((c) => [
     { text: c.label, callback_data: `pick:${c.id}` },
   ]);
   rows.push([{ text: "✕ Cancel", callback_data: "cancel" }]);
