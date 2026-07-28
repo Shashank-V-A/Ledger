@@ -7,6 +7,26 @@ import { CategoryItemBarChart } from "@/components/Charts";
 import type { Expense } from "@/types";
 import type { CategoryId } from "@/lib/categories";
 
+function normalizeItemLabel(label: string): string {
+  const raw = label.trim();
+  const lower = raw.toLowerCase();
+
+  const aliases: Array<{ match: RegExp; label: string }> = [
+    { match: /\bmetro\b.*\brecharge\b|\bmetro card\b/i, label: "Metro Recharge" },
+    { match: /\brapido\b/i, label: "Rapido" },
+  ];
+
+  for (const alias of aliases) {
+    if (alias.match.test(lower)) return alias.label;
+  }
+
+  return raw
+    .replace(/\s+/g, " ")
+    .replace(/\b(recharge|ride)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim() || "Untitled";
+}
+
 export function CategoryDetailList({
   groups,
   monthTotal,
@@ -37,7 +57,7 @@ export function CategoryDetailList({
         const color = getCategoryColor(group.category);
         const byDescription = Array.from(
           group.items.reduce((map, expense) => {
-            const label = expense.description?.trim() || "Untitled";
+            const label = normalizeItemLabel(expense.description?.trim() || "Untitled");
             map.set(label, (map.get(label) ?? 0) + Number(expense.amount));
             return map;
           }, new Map<string, number>())
