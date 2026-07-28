@@ -139,3 +139,66 @@ export function YearlyBarChart({
     </ResponsiveContainer>
   );
 }
+
+export function CategoryItemBarChart({
+  data,
+  color,
+}: {
+  data: { label: string; spent: number }[];
+  color: string;
+}) {
+  const chartData = data
+    .filter((item) => item.spent > 0)
+    .sort((a, b) => b.spent - a.spent)
+    .slice(0, 8);
+
+  if (!chartData.length) {
+    return (
+      <div className="flex h-56 items-center justify-center border-[3px] border-dashed border-[var(--ink)] text-sm font-bold uppercase text-[var(--text-muted)]">
+        No breakdown data yet
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart
+        data={chartData}
+        layout="vertical"
+        margin={{ top: 4, right: 10, left: 10, bottom: 4 }}
+      >
+        <CartesianGrid
+          strokeDasharray="0"
+          stroke="rgba(10, 10, 10, 0.12)"
+          horizontal={false}
+        />
+        <XAxis
+          type="number"
+          tick={{ fill: "#0a0a0a", fontSize: 11, fontWeight: 700 }}
+          axisLine={{ stroke: "#0a0a0a", strokeWidth: 2 }}
+          tickLine={false}
+          tickFormatter={(v) => (v >= 1000 ? `₹${Math.round(v / 1000)}k` : `₹${v}`)}
+        />
+        <YAxis
+          type="category"
+          dataKey="label"
+          width={110}
+          tick={{ fill: "#0a0a0a", fontSize: 11, fontWeight: 700 }}
+          axisLine={{ stroke: "#0a0a0a", strokeWidth: 2 }}
+          tickLine={false}
+          tickFormatter={(value: string) =>
+            value.length > 16 ? `${value.slice(0, 16)}…` : value
+          }
+        />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(200, 240, 77, 0.35)" }} />
+        <Bar
+          dataKey="spent"
+          fill={color}
+          stroke="#0a0a0a"
+          strokeWidth={2}
+          radius={[0, 0, 0, 0]}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}

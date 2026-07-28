@@ -3,6 +3,7 @@ import {
   getCategoryColor,
   getCategoryLabel,
 } from "@/lib/categories";
+import { CategoryItemBarChart } from "@/components/Charts";
 import type { Expense } from "@/types";
 import type { CategoryId } from "@/lib/categories";
 
@@ -34,6 +35,13 @@ export function CategoryDetailList({
       {groups.map((group) => {
         const pct = monthTotal ? Math.round((group.total / monthTotal) * 100) : 0;
         const color = getCategoryColor(group.category);
+        const byDescription = Array.from(
+          group.items.reduce((map, expense) => {
+            const label = expense.description?.trim() || "Untitled";
+            map.set(label, (map.get(label) ?? 0) + Number(expense.amount));
+            return map;
+          }, new Map<string, number>())
+        ).map(([label, spent]) => ({ label, spent }));
 
         return (
           <section key={group.category} className="panel overflow-hidden">
@@ -58,6 +66,20 @@ export function CategoryDetailList({
               <p className="stat-value text-2xl text-[var(--ink)]">
                 {formatCurrency(group.total)}
               </p>
+            </div>
+
+            <div className="panel-body border-b-[3px] border-[var(--ink)] bg-[#fffef7]">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-[var(--text)]">
+                    Spend by item
+                  </h3>
+                  <p className="text-xs font-semibold text-[var(--text-muted)]">
+                    Top descriptions inside {getCategoryLabel(group.category)}
+                  </p>
+                </div>
+              </div>
+              <CategoryItemBarChart data={byDescription} color={color} />
             </div>
 
             <div className="divide-y divide-[var(--border)]">
