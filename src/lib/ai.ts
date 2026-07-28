@@ -164,7 +164,7 @@ export async function generateInsights(input: {
       {
         role: "system",
         content:
-          'Generate 3-5 personalized spending insights for an Indian user. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Be specific with numbers and categories. Compare to previous month if available. Investments are included in total expenditure. Use "Rs." for amounts (never the rupee symbol). No generic advice.',
+          'You are a practical money coach for an Indian user, not a reporting tool. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Generate 3-5 insights that help the user improve money management. Each insight must do at least one of these: identify a risky pattern, point out a healthy habit worth continuing, recommend a concrete next action, or suggest where to cut back with reasoning. Use specific numbers and categories from the input. Compare to the previous month when useful. If budgets are present, explicitly mention overruns or remaining headroom. Avoid bland summaries like "X was your top category" unless you immediately explain why it matters and what to do next. Keep each detail to 1-3 sentences. Use "Rs." for amounts (never the rupee symbol). Treat investments separately from spending and mention that distinction when relevant.',
       },
       { role: "user", content: JSON.stringify(input) },
     ],
@@ -186,32 +186,109 @@ export async function generateInsights(input: {
 function buildFallbackInsights(input: {
   current: {
     totalSpent: number;
+    totalInvested: number;
     byCategory: { category: CategoryId; total: number }[];
   };
-  previous: { totalSpent: number } | null;
+  previous: { totalSpent: number; byCategory: { category: CategoryId; total: number }[] } | null;
   budgets: { category: CategoryId; monthly_limit: number }[];
+  topExpenses?: { description: string; amount: number; category: CategoryId }[];
 }): { title: string; detail: string; type: "warning" | "positive" | "neutral" }[] {
   const insights: { title: string; detail: string; type: "warning" | "positive" | "neutral" }[] = [];
 
+  const totalSpent = input.current.totalSpent;
+  const sortedCats = [...input.current.byCategory].sort((a, b) => b.total - a.total);
+  const top = sortedCats[0];
+  const budgetMap = new Map(input.budgets.map((b) => [b.category, b.monthly_limit]));
+
   if (input.previous) {
-    const diff = input.current.totalSpent - input.previous.totalSpent;
+    const diff = totalSpent - input.previous.totalSpent;
     const pct = input.previous.totalSpent
       ? Math.round((diff / input.previous.totalSpent) * 100)
       : 0;
+
+    if (Math.abs(diff) >= 300) {
+      insights.push({
+        title: diff > 0 ? "Spending creep needs attention" : "You pulled spending back",
+        detail:
+          diff > 0
+            ? `Your spending is ${pct > 0 ? "+" : ""}${pct}% vs last month. If this pace continues, focus first on the categories that changed most rather than trying to cut everything at once.`
+            : `Your spending is ${pct}% vs last month, which suggests better control. Try to keep next month at or below this run rate before increasing discretionary spending again.`,
+        type: diff > 0 ? "warning" : "positive",
+      });
+    }
+  }
+
+  if (top) {
+    const share = totalSpent ? Math.round((top.total / totalSpent) * 100) : 0;
+    if (share >= 35) {
+      insights.push({
+        title: "One category is dominating your month",
+        detail: `${getCategoryLabel(top.category)} is taking ${share}% of spending at Rs. ${Math.round(top.total).toLocaleString("en-IN")}. That concentration makes this the highest-leverage place to change behavior, so even a 10-15% cut here will matter more than tiny cuts elsewhere.`,
+        type: "warning",
+      });
+    } else {
+      insights.push({
+        title: "Your spending is reasonably diversified",
+        detail: `${getCategoryLabel(top.category)} is your biggest bucket, but it is only ${share}% of spending. That usually means you do not have a single runaway category, so small habit tweaks across 1-2 discretionary areas should be enough.`,
+        type: "positive",
+      });
+    }
+  }
+
+  const foodCats = sortedCats.filter((c) =>
+    c.category === "food_dining_out" ||
+    c.category === "food_ordering_in" ||
+    c.category === "food_small"
+  );
+  const foodTotal = foodCats.reduce((sum, c) => sum + c.total, 0);
+  const diningOut = foodCats.find((c) => c.category === "food_dining_out")?.total ?? 0;
+  const orderingIn = foodCats.find((c) => c.category === "food_ordering_in")?.total ?? 0;
+  if (totalSpent > 0 && foodTotal / totalSpent >= 0.3) {
     insights.push({
-      title: diff > 0 ? "Expenditure increased" : "Expenditure decreased",
-      detail: `Total expenditure is ${pct > 0 ? "+" : ""}${pct}% vs last month.`,
-      type: diff > 0 ? "warning" : "positive",
+      title: "Food is the easiest place to recover cash",
+      detail: `Food spending is Rs. ${Math.round(foodTotal).toLocaleString("en-IN")}, which is ${Math.round((foodTotal / totalSpent) * 100)}% of your monthly spend. Start with dining out and ordering in first${diningOut + orderingIn > 0 ? `, because those alone are Rs. ${Math.round(diningOut + orderingIn).toLocaleString("en-IN")}` : ""}, and set yourself a simple weekly cap.`,
+      type: "warning",
     });
   }
 
-  const top = [...input.current.byCategory]
-    .sort((a, b) => b.total - a.total)[0];
+  for (const currentCat of sortedCats) {
+    const limit = budgetMap.get(currentCat.category);
+    if (!limit || limit <= 0) continue;
+    const usedPct = Math.round((currentCat.total / limit) * 100);
+    if (currentCat.total > limit) {
+      insights.push({
+        title: `${getCategoryLabel(currentCat.category)} crossed its limit`,
+        detail: `You spent Rs. ${Math.round(currentCat.total).toLocaleString("en-IN")} against a budget of Rs. ${Math.round(limit).toLocaleString("en-IN")}. Next month, give this category a weekly cap or reduce one repeat expense early in the month so the overrun does not snowball.`,
+        type: "warning",
+      });
+      break;
+    }
+    if (usedPct >= 70 && usedPct <= 100) {
+      insights.push({
+        title: `${getCategoryLabel(currentCat.category)} is close to budget`,
+        detail: `You have already used ${usedPct}% of that category budget. Keep this on watch now, because one or two more impulse spends could push it over the line.`,
+        type: "neutral",
+      });
+      break;
+    }
+  }
 
-  if (top) {
+  if (input.current.totalInvested > 0) {
+    const investVsSpend = totalSpent > 0
+      ? Math.round((input.current.totalInvested / totalSpent) * 100)
+      : 100;
     insights.push({
-      title: "Top category",
-      detail: `${getCategoryLabel(top.category)} accounted for the largest share at ₹${Math.round(top.total).toLocaleString("en-IN")}.`,
+      title: "Investing habit is a strong anchor",
+      detail: `You invested Rs. ${Math.round(input.current.totalInvested).toLocaleString("en-IN")} this month, about ${investVsSpend}% of what you spent. Protect this first before optimizing smaller discretionary categories, because consistent investing matters more than perfect category control.`,
+      type: "positive",
+    });
+  }
+
+  const largestExpense = input.topExpenses?.[0];
+  if (largestExpense && largestExpense.amount >= 1000) {
+    insights.push({
+      title: "Review your largest discretionary purchases",
+      detail: `Your biggest expense was ${largestExpense.description} at Rs. ${Math.round(largestExpense.amount).toLocaleString("en-IN")} under ${getCategoryLabel(largestExpense.category)}. Large one-off spends are worth a quick review because they often reveal avoidable subscriptions, impulse upgrades, or better-timed alternatives.`,
       type: "neutral",
     });
   }

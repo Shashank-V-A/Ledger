@@ -2,6 +2,7 @@ import { generateInsights } from "@/lib/ai";
 import { formatCurrency } from "@/lib/categories";
 import {
   getExpenses,
+  getBudgets,
   getMonthlySummary,
   getPreviousMonthSummary,
   getYearlyData,
@@ -32,11 +33,12 @@ function daysForAverage(month: string): number {
 
 async function DashboardContent({ month }: { month: string }) {
   const year = parseInt(month.slice(0, 4), 10);
-  const [summary, previous, expenses, yearly] = await Promise.all([
+  const [summary, previous, expenses, yearly, budgets] = await Promise.all([
     getMonthlySummary(month),
     getPreviousMonthSummary(month),
     getExpenses({ month }),
     getYearlyData(year),
+    getBudgets(),
   ]);
 
   const topExpenses = [...expenses]
@@ -62,7 +64,10 @@ async function DashboardContent({ month }: { month: string }) {
           })),
         }
       : null,
-    budgets: [],
+    budgets: budgets.map((b) => ({
+      category: b.category,
+      monthly_limit: Number(b.monthly_limit),
+    })),
     topExpenses: topExpenses.map((e) => ({
       description: e.description ?? "-",
       amount: Number(e.amount),
