@@ -8,14 +8,13 @@ import { isValidCategory } from "@/lib/categories";
 import type { CategoryId } from "@/lib/categories";
 import { NextRequest, NextResponse } from "next/server";
 
-function isAuthorized(request: NextRequest): boolean {
-  const apiKey = process.env.DASHBOARD_API_KEY;
-  if (!apiKey) return true;
-  return request.headers.get("x-api-key") === apiKey;
+function getUserId(request: NextRequest): string | null {
+  return request.headers.get("x-ledger-user-id");
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  const userId = getUserId(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -27,13 +26,15 @@ export async function GET(request: NextRequest) {
     month,
     category: category as CategoryId | undefined,
     limit: limit ? parseInt(limit, 10) : undefined,
+    userId,
   });
 
   return NextResponse.json(expenses);
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  const userId = getUserId(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -48,13 +49,15 @@ export async function POST(request: NextRequest) {
     description: body.description,
     expense_date: body.expense_date,
     source: "web",
+    userId,
   });
 
   return NextResponse.json(expense, { status: 201 });
 }
 
 export async function PATCH(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  const userId = getUserId(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -63,18 +66,23 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  const expense = await updateExpense(body.id, {
-    amount: body.amount,
-    category: body.category,
-    description: body.description,
-    expense_date: body.expense_date,
-  });
+  const expense = await updateExpense(
+    body.id,
+    {
+      amount: body.amount,
+      category: body.category,
+      description: body.description,
+      expense_date: body.expense_date,
+    },
+    userId
+  );
 
   return NextResponse.json(expense);
 }
 
 export async function DELETE(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  const userId = getUserId(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -83,6 +91,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  await deleteExpense(id);
+  await deleteExpense(id, userId);
   return NextResponse.json({ ok: true });
 }

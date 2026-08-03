@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/categories";
 import { CategoryDetailList } from "@/components/CategoryDetail";
 import { PageHeader } from "@/components/PageHeader";
@@ -7,9 +8,10 @@ import { Suspense } from "react";
 export const dynamic = "force-dynamic";
 
 async function CategoriesContent({ month }: { month: string }) {
+  const user = await requireUser();
   const [groups, summary] = await Promise.all([
-    getExpensesGroupedByCategory(month),
-    getMonthlySummary(month),
+    getExpensesGroupedByCategory(month, user.id),
+    getMonthlySummary(month, user.id),
   ]);
 
   return (

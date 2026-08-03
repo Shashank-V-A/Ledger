@@ -9,10 +9,10 @@ import {
 import { generateMonthlyPdf } from "@/lib/pdf";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
-  getAllowedUserIds,
   sendTelegramDocument,
   sendTelegramMessage,
 } from "@/lib/telegram";
+import { listUsersWithTelegram } from "@/lib/users";
 import { format, subMonths } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -28,108 +28,118 @@ export async function GET(request: NextRequest) {
   const reportMonth = monthParam ?? format(subMonths(new Date(), 1), "yyyy-MM");
 
   try {
-    const [summary, previous, expenses, budgets] = await Promise.all([
-      getMonthlySummary(reportMonth),
-      getPreviousMonthSummary(reportMonth),
-      getExpenses({ month: reportMonth }),
-      getBudgets(),
-    ]);
+    const users = await listUsersWithTelegram();
+    const results: { userId: string; ok: boolean; reason?: string }[] = [];
 
-    if (!expenses.length) {
-      return NextResponse.json({ message: "No expenses for month", month: reportMonth });
-    }
+    for (const user of users) {
+      try {
+        const [summary, previous, expenses, budgets] = await Promise.all([
+          getMonthlySummary(reportMonth, user.id),
+          getPreviousMonthSummary(reportMonth, user.id),
+          getExpenses({ month: reportMonth, userId: user.id }),
+          getBudgets(user.id),
+        ]);
 
-    const topExpenses = [...expenses]
-      .sort((a, b) => Number(b.amount) - Number(a.amount))
-      .slice(0, 10);
+        if (!expenses.length) {
+          results.push({ userId: user.id, ok: true, reason: "no_expenses" });
+          continue;
+        }
 
-    const insights = await generateInsights({
-      current: {
-        month: reportMonth,
-        totalSpent: summary.totalSpent,
-        totalInvested: summary.totalInvested,
-        byCategory: summary.byCategory.map((c) => ({
-          category: c.category,
-          total: c.total,
-        })),
-      },
-      previous: previous
-        ? {
-            totalSpent: previous.totalSpent,
-            byCategory: previous.byCategory.map((c) => ({
+        const topExpenses = [...expenses]
+          .sort((a, b) => Number(b.amount) - Number(a.amount))
+          .slice(0, 10);
+
+        const insights = await generateInsights({
+          current: {
+            month: reportMonth,
+            totalSpent: summary.totalSpent,
+            totalInvested: summary.totalInvested,
+            byCategory: summary.byCategory.map((c) => ({
               category: c.category,
               total: c.total,
             })),
-          }
-        : null,
-      budgets: budgets.map((b) => ({
-        category: b.category,
-        monthly_limit: Number(b.monthly_limit),
-      })),
-      topExpenses: topExpenses.map((e) => ({
-        description: e.description ?? "-",
-        amount: Number(e.amount),
-        category: e.category,
-      })),
-    });
+          },
+          previous: previous
+            ? {
+                totalSpent: previous.totalSpent,
+                byCategory: previous.byCategory.map((c) => ({
+                  category: c.category,
+                  total: c.total,
+                })),
+              }
+            : null,
+          budgets: budgets.map((b) => ({
+            category: b.category,
+            monthly_limit: Number(b.monthly_limit),
+          })),
+          topExpenses: topExpenses.map((e) => ({
+            description: e.description ?? "-",
+            amount: Number(e.amount),
+            category: e.category,
+          })),
+        });
 
-    const pdf = generateMonthlyPdf({
-      summary,
-      previousSummary: previous,
-      insights,
-      topExpenses,
-    });
+        const pdf = generateMonthlyPdf({
+          summary,
+          previousSummary: previous,
+          insights,
+          topExpenses,
+        });
 
-    const supabase = createServiceClient();
-    await supabase.from("monthly_reports").upsert(
-      {
-        report_month: `${reportMonth}-01`,
-        total_spent: summary.totalSpent,
-        total_invested: summary.totalInvested,
-        insights,
-        sent_at: new Date().toISOString(),
-      },
-      { onConflict: "report_month" }
-    );
+        const supabase = createServiceClient();
+        await supabase.from("monthly_reports").upsert(
+          {
+            report_month: `${reportMonth}-01`,
+            user_id: user.id,
+            total_spent: summary.totalSpent,
+            total_invested: summary.totalInvested,
+            insights,
+            sent_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,report_month" }
+        );
 
-    const userIds = getAllowedUserIds();
-    const chatIds = userIds.length ? userIds : [];
+        const chatId = user.telegram_user_id;
+        const monthLabel = format(new Date(`${reportMonth}-01`), "MMMM yyyy");
+        const caption = [
+          `📄 ${monthLabel} Report`,
+          `Spent: ${formatCurrency(summary.totalSpent)}`,
+          ...(summary.totalInvested > 0
+            ? [`Invested: ${formatCurrency(summary.totalInvested)}`]
+            : []),
+        ].join("\n");
 
-    if (!chatIds.length && process.env.TELEGRAM_CHAT_ID) {
-      chatIds.push(Number(process.env.TELEGRAM_CHAT_ID));
-    }
+        await sendTelegramDocument(
+          chatId,
+          pdf,
+          `expense-report-${reportMonth}.pdf`,
+          caption
+        );
 
-    const monthLabel = format(new Date(`${reportMonth}-01`), "MMMM yyyy");
-    const caption = [
-      `📄 ${monthLabel} Report`,
-      `Spent: ${formatCurrency(summary.totalSpent)}`,
-      ...(summary.totalInvested > 0
-        ? [`Invested: ${formatCurrency(summary.totalInvested)}`]
-        : []),
-    ].join("\n");
+        const insightText = insights
+          .map((i) => `• ${i.title}: ${i.detail}`)
+          .join("\n");
+        await sendTelegramMessage(
+          chatId,
+          `🤖 AI Insights for ${monthLabel}\n\n${insightText}`
+        );
 
-    for (const chatId of chatIds) {
-      await sendTelegramDocument(
-        chatId,
-        pdf,
-        `expense-report-${reportMonth}.pdf`,
-        caption
-      );
-
-      const insightText = insights
-        .map((i) => `• ${i.title}: ${i.detail}`)
-        .join("\n");
-      await sendTelegramMessage(
-        chatId,
-        `🤖 AI Insights for ${monthLabel}\n\n${insightText}`
-      );
+        results.push({ userId: user.id, ok: true });
+      } catch (err) {
+        console.error("Monthly report user error:", user.id, err);
+        results.push({
+          userId: user.id,
+          ok: false,
+          reason: err instanceof Error ? err.message : "failed",
+        });
+      }
     }
 
     return NextResponse.json({
       ok: true,
       month: reportMonth,
-      totalSpent: summary.totalSpent,
-      recipients: chatIds.length,
+      users: results.length,
+      results,
     });
   } catch (error) {
     console.error("Monthly report error:", error);

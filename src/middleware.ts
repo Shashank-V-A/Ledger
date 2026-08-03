@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const AUTH_COOKIE = "ledger_auth";
+const AUTH_COOKIE = "ledger_session";
 
 const PUBLIC_PREFIXES = [
   "/login",
+  "/setup",
   "/api/telegram",
   "/api/cron",
 ];
@@ -16,6 +17,30 @@ async function sha256Hex(text: string): Promise<string> {
     .join("");
 }
 
+function getSessionSecret(): string {
+  return (
+    process.env.SESSION_SECRET?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.DASHBOARD_PASSWORD?.trim() ||
+    "ledger-dev-session-secret"
+  );
+}
+
+async function parseSessionToken(
+  token: string | undefined
+): Promise<{ userId: string } | null> {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [userId, expStr, sig] = parts;
+  const exp = Number(expStr);
+  if (!userId || !exp || Number.isNaN(exp)) return null;
+  if (exp < Math.floor(Date.now() / 1000)) return null;
+  const expected = await sha256Hex(`${userId}.${exp}.${getSessionSecret()}`);
+  if (expected !== sig) return null;
+  return { userId };
+}
+
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -24,24 +49,24 @@ function isPublicPath(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const password = process.env.DASHBOARD_PASSWORD?.trim();
 
-  if (!password || isPublicPath(pathname)) {
+  if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 
-  const expected = await sha256Hex(`ledger:${password}`);
   const token = request.cookies.get(AUTH_COOKIE)?.value;
-  const authed = token === expected;
+  const session = await parseSessionToken(token);
 
   if (pathname.startsWith("/api/")) {
-    if (!authed) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-ledger-user-id", session.userId);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  if (!authed) {
+  if (!session) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);

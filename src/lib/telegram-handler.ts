@@ -19,6 +19,12 @@ import {
   sendTelegramMessage,
   type InlineKeyboard,
 } from "@/lib/telegram";
+import {
+  getAppUrl,
+  refreshSetupToken,
+  upsertUserFromTelegram,
+  type LedgerUser,
+} from "@/lib/users";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
 interface TelegramUpdate {
@@ -26,12 +32,12 @@ interface TelegramUpdate {
     message_id: number;
     text?: string;
     chat: { id: number };
-    from?: { id: number; first_name?: string };
+    from?: { id: number; first_name?: string; username?: string };
   };
   callback_query?: {
     id: string;
     data?: string;
-    from: { id: number };
+    from: { id: number; first_name?: string; username?: string };
     message?: {
       message_id: number;
       chat: { id: number };
@@ -43,6 +49,7 @@ interface TelegramUpdate {
 type PendingExpense = {
   amount: number;
   description: string;
+  ledgerUserId: string;
   createdAt: number;
 };
 
@@ -56,22 +63,25 @@ const pendingByUser =
   globalThis as unknown as { __ledgerPending?: Map<number, PendingExpense> }
 ).__ledgerPending = pendingByUser;
 
-function setPending(userId: number, pending: Omit<PendingExpense, "createdAt">) {
-  pendingByUser.set(userId, { ...pending, createdAt: Date.now() });
+function setPending(
+  telegramUserId: number,
+  pending: Omit<PendingExpense, "createdAt">
+) {
+  pendingByUser.set(telegramUserId, { ...pending, createdAt: Date.now() });
 }
 
-function getPending(userId: number): PendingExpense | null {
-  const pending = pendingByUser.get(userId);
+function getPending(telegramUserId: number): PendingExpense | null {
+  const pending = pendingByUser.get(telegramUserId);
   if (!pending) return null;
   if (Date.now() - pending.createdAt > PENDING_TTL_MS) {
-    pendingByUser.delete(userId);
+    pendingByUser.delete(telegramUserId);
     return null;
   }
   return pending;
 }
 
-function clearPending(userId: number) {
-  pendingByUser.delete(userId);
+function clearPending(telegramUserId: number) {
+  pendingByUser.delete(telegramUserId);
 }
 
 function summarizeRange(
@@ -107,7 +117,6 @@ function summarizeRange(
 }
 
 function categoryPickKeyboard(): InlineKeyboard {
-  // One row per category so full website labels fit clearly on mobile
   const rows: InlineKeyboard["inline_keyboard"] = CATEGORY_LIST.map((c) => [
     { text: c.label, callback_data: `pick:${c.id}` },
   ]);
@@ -128,26 +137,87 @@ function loggedMessage(
   return `✅ Logged ${formatCurrency(amount)} under ${getCategoryLabel(category)}\n📝 ${description}\n📅 ${date}`;
 }
 
-const HELP_TEXT = `💰 Expense Tracker Bot
+const HELP_TEXT = `💰 Ledger Bot
 
 Type an amount (optional note), then pick a category:
 • 200
 • 200/- Snack
-• 120 lunch zomato
 • fuel 2500
 
 Commands:
-• today — today's summary
-• this week — weekly summary
-• undo — delete last entry
-• help — show this message
+• today — your spending today
+• this week — your week so far
+• undo — remove your last entry
+• password — get link to set/change web password
+• help — this message
 
-Categories: Dining Out, Ordering In, Tea & Snacks, Investments, Entertainment, Fuel/Transport, Clothing, Miscellaneous`;
+Web dashboard needs your Login ID + password (from /start).`;
+
+async function resolveLedgerUser(from: {
+  id: number;
+  first_name?: string;
+  username?: string;
+}): Promise<LedgerUser | null> {
+  if (!isAllowedUser(from.id)) return null;
+  const { user } = await upsertUserFromTelegram({
+    telegramUserId: from.id,
+    firstName: from.first_name,
+    username: from.username,
+  });
+  return user;
+}
+
+async function ensureLedgerUserOrReject(
+  chatId: number,
+  from: { id: number; first_name?: string; username?: string }
+): Promise<LedgerUser | null> {
+  if (!isAllowedUser(from.id)) {
+    await sendTelegramMessage(
+      chatId,
+      `⛔ Unauthorized. Your Telegram user ID is ${from.id}. Ask the admin to add it to TELEGRAM_ALLOWED_USER_IDS (or leave that list empty to allow anyone).`
+    );
+    return null;
+  }
+  return resolveLedgerUser(from);
+}
+
+function startMessage(user: LedgerUser, isNew: boolean): string {
+  const appUrl = getAppUrl();
+  const setupUrl = user.setup_token
+    ? `${appUrl}/setup?token=${user.setup_token}`
+    : null;
+
+  const lines = [
+    isNew
+      ? `✅ Welcome ${user.display_name || "there"}! Your personal ledger is ready.`
+      : `👋 Welcome back, ${user.display_name || user.login_id}.`,
+    "",
+    `🔑 Login ID: ${user.login_id}`,
+    `🌐 Dashboard: ${appUrl}/login`,
+  ];
+
+  if (setupUrl) {
+    lines.push(
+      "",
+      user.password_hash
+        ? `Reset password: ${setupUrl}`
+        : `Set a web password (keeps your ledger private):\n${setupUrl}`
+    );
+  } else {
+    lines.push(
+      "",
+      "Web password already set. Send password to get a reset link."
+    );
+  }
+
+  lines.push("", "Start logging: try “200 tea” or type help");
+  return lines.join("\n");
+}
 
 async function handleCallbackQuery(
   callback: NonNullable<TelegramUpdate["callback_query"]>
 ): Promise<void> {
-  const userId = callback.from.id;
+  const telegramUserId = callback.from.id;
   const chatId = callback.message?.chat.id;
   const messageId = callback.message?.message_id;
   const data = callback.data ?? "";
@@ -157,13 +227,14 @@ async function handleCallbackQuery(
     return;
   }
 
-  if (!isAllowedUser(userId)) {
+  const ledgerUser = await ensureLedgerUserOrReject(chatId, callback.from);
+  if (!ledgerUser) {
     await answerCallbackQuery(callback.id, "Unauthorized");
     return;
   }
 
   if (data === "cancel") {
-    clearPending(userId);
+    clearPending(telegramUserId);
     await answerCallbackQuery(callback.id, "Cancelled");
     await editTelegramMessage(chatId, messageId, "✕ Cancelled — nothing logged");
     return;
@@ -176,8 +247,8 @@ async function handleCallbackQuery(
       return;
     }
 
-    const pending = getPending(userId);
-    if (!pending) {
+    const pending = getPending(telegramUserId);
+    if (!pending || pending.ledgerUserId !== ledgerUser.id) {
       await answerCallbackQuery(callback.id, "Expired — send amount again");
       await editTelegramMessage(
         chatId,
@@ -192,15 +263,15 @@ async function handleCallbackQuery(
       category,
       description: pending.description,
       source: "telegram",
-      telegram_user_id: userId,
+      telegram_user_id: telegramUserId,
+      userId: ledgerUser.id,
     });
 
-    clearPending(userId);
+    clearPending(telegramUserId);
     await answerCallbackQuery(
       callback.id,
       `Logged under ${getCategoryLabel(category)}`
     );
-    // Edit message to confirmation and clear the category buttons
     await editTelegramMessage(
       chatId,
       messageId,
@@ -227,26 +298,41 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
   if (!message?.text || !message.from) return;
 
   const chatId = message.chat.id;
-  const userId = message.from.id;
+  const telegramUserId = message.from.id;
   const text = message.text.trim();
-
-  if (!isAllowedUser(userId)) {
-    await sendTelegramMessage(
-      chatId,
-      `⛔ Unauthorized. Your Telegram user ID is ${userId}. Ask the admin to add it to TELEGRAM_ALLOWED_USER_IDS.`
-    );
-    return;
-  }
-
   const lower = text.toLowerCase();
 
-  if (lower === "/start") {
-    await sendTelegramMessage(
-      chatId,
-      `${HELP_TEXT}\n\n🆔 Your Telegram ID: ${userId}`
-    );
+  // /start always upserts so new users can join
+  if (lower === "/start" || lower.startsWith("/start ")) {
+    if (!isAllowedUser(telegramUserId)) {
+      await sendTelegramMessage(
+        chatId,
+        `⛔ Unauthorized. Your Telegram user ID is ${telegramUserId}.`
+      );
+      return;
+    }
+    const { user, created } = await upsertUserFromTelegram({
+      telegramUserId,
+      firstName: message.from.first_name,
+      username: message.from.username,
+    });
+    // Ensure a setup token if password not set
+    if (!user.password_hash && !user.setup_token) {
+      await refreshSetupToken(user.id);
+      const refreshed = await upsertUserFromTelegram({
+        telegramUserId,
+        firstName: message.from.first_name,
+        username: message.from.username,
+      });
+      await sendTelegramMessage(chatId, startMessage(refreshed.user, created));
+      return;
+    }
+    await sendTelegramMessage(chatId, startMessage(user, created));
     return;
   }
+
+  const ledgerUser = await ensureLedgerUserOrReject(chatId, message.from);
+  if (!ledgerUser) return;
 
   if (lower === "help") {
     await sendTelegramMessage(chatId, HELP_TEXT);
@@ -254,12 +340,25 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
   }
 
   if (lower === "/myid" || lower === "myid") {
-    await sendTelegramMessage(chatId, `🆔 Your Telegram ID: ${userId}`);
+    await sendTelegramMessage(
+      chatId,
+      `🆔 Telegram ID: ${telegramUserId}\n🔑 Login ID: ${ledgerUser.login_id}`
+    );
+    return;
+  }
+
+  if (lower === "password" || lower === "/password") {
+    const token = await refreshSetupToken(ledgerUser.id);
+    const url = `${getAppUrl()}/setup?token=${token}`;
+    await sendTelegramMessage(
+      chatId,
+      `🔐 Set or change your web password:\n${url}\n\nLogin ID: ${ledgerUser.login_id}\nDashboard: ${getAppUrl()}/login`
+    );
     return;
   }
 
   if (lower === "undo" || lower === "delete last") {
-    const deleted = await deleteLastExpense(userId);
+    const deleted = await deleteLastExpense(telegramUserId, ledgerUser.id);
     if (!deleted) {
       await sendTelegramMessage(chatId, "Nothing to undo.");
       return;
@@ -273,7 +372,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
 
   if (lower === "today") {
     const today = format(new Date(), "yyyy-MM-dd");
-    const expenses = await getExpensesForDateRange(today, today);
+    const expenses = await getExpensesForDateRange(today, today, ledgerUser.id);
     await sendTelegramMessage(chatId, summarizeRange(expenses, "Today"));
     return;
   }
@@ -282,7 +381,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
     const now = new Date();
     const start = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
     const end = format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
-    const expenses = await getExpensesForDateRange(start, end);
+    const expenses = await getExpensesForDateRange(start, end, ledgerUser.id);
     await sendTelegramMessage(chatId, summarizeRange(expenses, "This week"));
     return;
   }
@@ -297,7 +396,11 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
       return;
     }
 
-    setPending(userId, draft);
+    setPending(telegramUserId, {
+      amount: draft.amount,
+      description: draft.description,
+      ledgerUserId: ledgerUser.id,
+    });
     await sendTelegramMessage(
       chatId,
       chooseCategoryMessage(draft.amount, draft.description),

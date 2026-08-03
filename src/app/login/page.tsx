@@ -1,5 +1,5 @@
 import { loginAction } from "@/app/login/actions";
-import { isAuthEnabled } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function LoginPage({
@@ -7,13 +7,13 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  if (!isAuthEnabled()) {
-    redirect("/");
-  }
+  const user = await getCurrentUser();
+  if (user) redirect("/");
 
   const params = await searchParams;
   const next = params.next?.startsWith("/") ? params.next : "/";
   const hasError = params.error === "1";
+  const setupError = params.error === "setup";
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
@@ -25,13 +25,25 @@ export default async function LoginPage({
           <h1 className="font-[family-name:var(--font-syne)] text-3xl font-extrabold uppercase tracking-tight text-[var(--text)]">
             Ledger
           </h1>
-          <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Enter password to continue
+          <p className="mt-2 text-sm font-semibold text-[var(--text-muted)]">
+            Open your personal ledger
           </p>
         </div>
 
         <form action={loginAction} className="panel p-6">
           <input type="hidden" name="next" value={next} />
+          <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-[var(--text)]">
+            Login ID
+          </label>
+          <input
+            name="login_id"
+            type="text"
+            required
+            autoFocus
+            autoComplete="username"
+            className="field mb-3"
+            placeholder="from Telegram /start"
+          />
           <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-[var(--text)]">
             Password
           </label>
@@ -39,19 +51,27 @@ export default async function LoginPage({
             name="password"
             type="password"
             required
-            autoFocus
             autoComplete="current-password"
             className="field"
             placeholder="••••••••"
           />
           {hasError && (
             <p className="mt-2 text-sm font-bold text-[var(--negative)]">
-              Incorrect password
+              Invalid login ID or password
+            </p>
+          )}
+          {setupError && (
+            <p className="mt-2 text-sm font-bold text-[var(--negative)]">
+              That setup link is invalid. Send /start on Telegram for a new one.
             </p>
           )}
           <button type="submit" className="btn-primary mt-4 w-full">
             Unlock
           </button>
+          <p className="mt-4 text-center text-xs font-semibold text-[var(--text-muted)]">
+            New here? Message the Telegram bot with <strong>/start</strong>, then
+            open the password setup link it sends you.
+          </p>
         </form>
       </div>
     </div>

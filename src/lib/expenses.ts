@@ -22,6 +22,7 @@ export async function createExpense(input: {
   expense_date?: string;
   source?: "telegram" | "web";
   telegram_user_id?: number;
+  userId: string;
 }): Promise<Expense> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
@@ -33,6 +34,7 @@ export async function createExpense(input: {
       expense_date: input.expense_date ?? format(new Date(), "yyyy-MM-dd"),
       source: input.source ?? "web",
       telegram_user_id: input.telegram_user_id ?? null,
+      user_id: input.userId,
     })
     .select()
     .single();
@@ -41,14 +43,14 @@ export async function createExpense(input: {
   return data as Expense;
 }
 
-export async function getExpenseById(id: string): Promise<Expense | null> {
+export async function getExpenseById(
+  id: string,
+  userId?: string
+): Promise<Expense | null> {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from("expenses")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
+  let query = supabase.from("expenses").select("*").eq("id", id);
+  if (userId) query = query.eq("user_id", userId);
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return (data as Expense | null) ?? null;
 }
@@ -57,6 +59,7 @@ export async function getExpenses(filters?: {
   month?: string;
   category?: CategoryId;
   limit?: number;
+  userId?: string;
 }): Promise<Expense[]> {
   const supabase = createServiceClient();
   let query = supabase
@@ -64,6 +67,10 @@ export async function getExpenses(filters?: {
     .select("*")
     .order("expense_date", { ascending: false })
     .order("created_at", { ascending: false });
+
+  if (filters?.userId) {
+    query = query.eq("user_id", filters.userId);
+  }
 
   if (filters?.month) {
     const start = startOfMonth(parseISO(`${filters.month}-01`));
@@ -88,28 +95,33 @@ export async function getExpenses(filters?: {
 
 export async function updateExpense(
   id: string,
-  updates: Partial<Pick<Expense, "amount" | "category" | "description" | "expense_date">>
+  updates: Partial<
+    Pick<Expense, "amount" | "category" | "description" | "expense_date">
+  >,
+  userId?: string
 ): Promise<Expense> {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("expenses")
     .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-
+    .eq("id", id);
+  if (userId) query = query.eq("user_id", userId);
+  const { data, error } = await query.select().single();
   if (error) throw error;
   return data as Expense;
 }
 
-export async function deleteExpense(id: string): Promise<void> {
+export async function deleteExpense(id: string, userId?: string): Promise<void> {
   const supabase = createServiceClient();
-  const { error } = await supabase.from("expenses").delete().eq("id", id);
+  let query = supabase.from("expenses").delete().eq("id", id);
+  if (userId) query = query.eq("user_id", userId);
+  const { error } = await query;
   if (error) throw error;
 }
 
 export async function deleteLastExpense(
-  telegramUserId?: number
+  telegramUserId?: number,
+  userId?: string
 ): Promise<Expense | null> {
   const supabase = createServiceClient();
   let query = supabase
@@ -118,7 +130,9 @@ export async function deleteLastExpense(
     .order("created_at", { ascending: false })
     .limit(1);
 
-  if (telegramUserId) {
+  if (userId) {
+    query = query.eq("user_id", userId);
+  } else if (telegramUserId) {
     query = query.eq("telegram_user_id", telegramUserId);
   }
 
@@ -127,22 +141,26 @@ export async function deleteLastExpense(
   if (!data?.length) return null;
 
   const expense = data[0] as Expense;
-  await deleteExpense(expense.id);
+  await deleteExpense(expense.id, userId);
   return expense;
 }
 
 export async function getExpensesForDateRange(
   start: string,
-  end: string
+  end: string,
+  userId?: string
 ): Promise<Expense[]> {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("expenses")
     .select("*")
     .gte("expense_date", start)
     .lte("expense_date", end)
     .order("expense_date", { ascending: false });
 
+  if (userId) query = query.eq("user_id", userId);
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as Expense[];
 }
@@ -180,36 +198,51 @@ function summarizeExpenses(expenses: Expense[]): MonthlySummary {
   };
 }
 
-export async function getMonthlySummary(month: string): Promise<MonthlySummary> {
-  const expenses = await getExpenses({ month });
+export async function getMonthlySummary(
+  month: string,
+  userId?: string
+): Promise<MonthlySummary> {
+  const expenses = await getExpenses({ month, userId });
   const summary = summarizeExpenses(expenses);
   return { ...summary, month };
 }
 
 export async function getPreviousMonthSummary(
-  month: string
+  month: string,
+  userId?: string
 ): Promise<MonthlySummary | null> {
   const prev = subMonths(parseISO(`${month}-01`), 1);
   const prevMonth = format(prev, "yyyy-MM");
-  const expenses = await getExpenses({ month: prevMonth });
+  const expenses = await getExpenses({ month: prevMonth, userId });
   if (!expenses.length) return null;
   return { ...summarizeExpenses(expenses), month: prevMonth };
 }
 
-export async function getBudgets() {
+export async function getBudgets(userId?: string) {
   const supabase = createServiceClient();
-  const { data, error } = await supabase.from("budgets").select("*");
+  let query = supabase.from("budgets").select("*");
+  if (userId) query = query.eq("user_id", userId);
+  const { data, error } = await query;
   if (error) throw error;
   return data ?? [];
 }
 
-export async function upsertBudget(category: CategoryId, monthly_limit: number) {
+export async function upsertBudget(
+  category: CategoryId,
+  monthly_limit: number,
+  userId: string
+) {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("budgets")
     .upsert(
-      { category, monthly_limit, updated_at: new Date().toISOString() },
-      { onConflict: "category" }
+      {
+        category,
+        monthly_limit,
+        user_id: userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,category" }
     )
     .select()
     .single();
@@ -218,14 +251,17 @@ export async function upsertBudget(category: CategoryId, monthly_limit: number) 
   return data;
 }
 
-export async function getYearlyData(year: number) {
+export async function getYearlyData(year: number, userId?: string) {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("expenses")
     .select("*")
     .gte("expense_date", `${year}-01-01`)
     .lte("expense_date", `${year}-12-31`);
 
+  if (userId) query = query.eq("user_id", userId);
+
+  const { data, error } = await query;
   if (error) throw error;
   const expenses = (data ?? []) as Expense[];
 
@@ -256,8 +292,11 @@ export async function getYearlyData(year: number) {
   return Object.values(months);
 }
 
-export async function getExpensesGroupedByCategory(month: string) {
-  const expenses = await getExpenses({ month });
+export async function getExpensesGroupedByCategory(
+  month: string,
+  userId?: string
+) {
+  const expenses = await getExpenses({ month, userId });
   const groups = new Map<CategoryId, Expense[]>();
 
   for (const expense of expenses) {

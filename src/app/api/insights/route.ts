@@ -1,15 +1,15 @@
-import { getMonthlySummary, getPreviousMonthSummary, getExpenses, getBudgets } from "@/lib/expenses";
+import {
+  getMonthlySummary,
+  getPreviousMonthSummary,
+  getExpenses,
+  getBudgets,
+} from "@/lib/expenses";
 import { generateInsights } from "@/lib/ai";
 import { NextRequest, NextResponse } from "next/server";
 
-function isAuthorized(request: NextRequest): boolean {
-  const apiKey = process.env.DASHBOARD_API_KEY;
-  if (!apiKey) return true;
-  return request.headers.get("x-api-key") === apiKey;
-}
-
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  const userId = request.headers.get("x-ledger-user-id");
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     new Date().toISOString().slice(0, 7);
 
   const [summary, previous, expenses, budgets] = await Promise.all([
-    getMonthlySummary(month),
-    getPreviousMonthSummary(month),
-    getExpenses({ month }),
-    getBudgets(),
+    getMonthlySummary(month, userId),
+    getPreviousMonthSummary(month, userId),
+    getExpenses({ month, userId }),
+    getBudgets(userId),
   ]);
 
   const topExpenses = [...expenses]
@@ -59,5 +59,10 @@ export async function GET(request: NextRequest) {
     topExpenses,
   });
 
-  return NextResponse.json({ summary, previous, insights, topExpenses: expenses.slice(0, 10) });
+  return NextResponse.json({
+    summary,
+    previous,
+    insights,
+    topExpenses: expenses.slice(0, 10),
+  });
 }

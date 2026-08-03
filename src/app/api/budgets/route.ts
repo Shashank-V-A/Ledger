@@ -3,22 +3,18 @@ import { isValidCategory } from "@/lib/categories";
 import type { CategoryId } from "@/lib/categories";
 import { NextRequest, NextResponse } from "next/server";
 
-function isAuthorized(request: NextRequest): boolean {
-  const apiKey = process.env.DASHBOARD_API_KEY;
-  if (!apiKey) return true;
-  return request.headers.get("x-api-key") === apiKey;
-}
-
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  const userId = request.headers.get("x-ledger-user-id");
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const budgets = await getBudgets();
+  const budgets = await getBudgets(userId);
   return NextResponse.json(budgets);
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  const userId = request.headers.get("x-ledger-user-id");
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -29,7 +25,8 @@ export async function POST(request: NextRequest) {
 
   const budget = await upsertBudget(
     body.category as CategoryId,
-    Number(body.monthly_limit)
+    Number(body.monthly_limit),
+    userId
   );
   return NextResponse.json(budget);
 }

@@ -1,3 +1,4 @@
+import { requireUser } from "@/lib/auth";
 import { getExpenses } from "@/lib/expenses";
 import { AddExpenseForm } from "@/components/AddExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
@@ -7,7 +8,8 @@ import { Suspense } from "react";
 export const dynamic = "force-dynamic";
 
 async function ExpensesContent({ month }: { month: string }) {
-  const expenses = await getExpenses({ month });
+  const user = await requireUser();
+  const expenses = await getExpenses({ month, userId: user.id });
 
   return (
     <>

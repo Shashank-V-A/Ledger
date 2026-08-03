@@ -13,7 +13,7 @@ const links = [
 export function Sidebar({ showLogout = false }: { showLogout?: boolean }) {
   const pathname = usePathname();
 
-  if (pathname === "/login") return null;
+  if (pathname === "/login" || pathname.startsWith("/setup")) return null;
 
   return (
     <>

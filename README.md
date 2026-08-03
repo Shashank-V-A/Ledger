@@ -1,24 +1,24 @@
 # Expense Automation
 
-Personal expense tracker with a web dashboard, Telegram logging, AI insights, and automated monthly PDF reports.
+Personal expense tracker with a multi-user web dashboard, Telegram logging, AI insights, and automated monthly PDF reports.
+
+## How multi-user works
+
+1. Message the Telegram bot with **`/start`**
+2. Bot creates **your private ledger**, shows your **Login ID**, and a link to set a website password
+3. Log expenses on Telegram (only your data)
+4. Open the website → log in with Login ID + password → see **only your** expenses
 
 ## Features
 
-- **8 categories** tailored for living at home with parents:
-  - Dining Out
-  - Ordering In
-  - Tea, Coffee & Snacks
-  - Investments (tracked separately from spending)
-  - Entertainment (includes mobile recharge)
-  - Fuel / Transport
-  - Clothing & Accessories
-  - Miscellaneous
-- **Telegram bot** — type amount (optional note), then pick a category from buttons
-- **Commands**: `today`, `this week`, `undo`, `help`
-- **Web dashboard** — charts, spent vs invested split, expense list with edit/search, month picker
-- **Password lock** — optional `DASHBOARD_PASSWORD` for the web UI
-- **AI insights** — month-over-month analysis
-- **PDF reports** — download from the dashboard, or auto-sent to Telegram on the 1st of each month
+- **Per-user ledgers** — Telegram `/start` registers a private account
+- **Web password** — each user sets their own password to protect the dashboard
+- **8 categories** (Dining Out, Ordering In, Tea & Snacks, Investments, Entertainment, Fuel/Transport, Clothing, Misc)
+- **Telegram bot** — amount → pick category → log
+- **Commands**: `today`, `this week`, `undo`, `password`, `help`
+- **Web dashboard** — charts, spent vs invested, category breakdowns, PDF download
+- **AI insights** — actionable money-management advice
+- **Monthly PDF** — one report per user to their Telegram
 
 ## Tech Stack
 
@@ -50,7 +50,12 @@ cp .env.example .env.local
 
 Fill in all values in `.env.local` (see `.env.example` for details).
 
-Set `DASHBOARD_PASSWORD` to lock the web dashboard. Leave it empty for open local access.
+Set `APP_URL` to your public URL. Optionally set `SESSION_SECRET` to a long random string.
+
+**After deploy / locally**, run the SQL migrations in Supabase (in order):
+
+1. `supabase/migrations/001_initial.sql`
+2. `supabase/migrations/002_multi_user.sql`
 
 ### 4. Run locally
 
@@ -81,22 +86,22 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 
 | Message | Action |
 |---------|--------|
-| `200` or `200/- Snack` | Ask for category, then log on tap |
-| Tap a category | Saves the expense and removes the buttons |
-| `✕ Cancel` | Drops the draft, nothing logged |
-| `today` | Today's spending summary (spent vs invested) |
-| `this week` | Weekly summary |
-| `undo` | Delete last entry |
-| `help` | Show commands |
+| `/start` | Create/open your private ledger + password setup link |
+| `200` or `200/- Snack` | Choose category, then log (your ledger only) |
+| `password` | Get web password setup/reset link |
+| `today` / `this week` | Your summaries only |
+| `undo` | Delete your last entry |
+| `help` | Commands |
 
 ## Deploy to Vercel
 
 1. Push to GitHub
 2. Import in Vercel
-3. Add all environment variables (including `DASHBOARD_PASSWORD` if you want a lock)
-4. Deploy
-5. Visit `/api/telegram/setup` to register webhook
-6. Vercel Cron runs monthly report on the 1st at 6:00 UTC (configure in `vercel.json`)
+3. Add all environment variables (including `SESSION_SECRET`, `APP_URL`)
+4. Run **both** SQL migrations in the Supabase SQL editor
+5. Deploy
+6. Visit `/api/telegram/setup` to register webhook
+7. Send `/start` to the bot, set your web password, then log expenses
 
 ### Manual monthly report
 

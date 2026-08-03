@@ -1,4 +1,5 @@
 import { generateInsights } from "@/lib/ai";
+import { requireUser } from "@/lib/auth";
 import { formatCurrency } from "@/lib/categories";
 import {
   getExpenses,
@@ -32,13 +33,14 @@ function daysForAverage(month: string): number {
 }
 
 async function DashboardContent({ month }: { month: string }) {
+  const user = await requireUser();
   const year = parseInt(month.slice(0, 4), 10);
   const [summary, previous, expenses, yearly, budgets] = await Promise.all([
-    getMonthlySummary(month),
-    getPreviousMonthSummary(month),
-    getExpenses({ month }),
-    getYearlyData(year),
-    getBudgets(),
+    getMonthlySummary(month, user.id),
+    getPreviousMonthSummary(month, user.id),
+    getExpenses({ month, userId: user.id }),
+    getYearlyData(year, user.id),
+    getBudgets(user.id),
   ]);
 
   const topExpenses = [...expenses]
@@ -83,12 +85,14 @@ async function DashboardContent({ month }: { month: string }) {
     ? Math.round(summary.totalSpent / days)
     : 0;
 
+  const name = user.display_name || user.login_id;
+
   return (
     <>
       <PageHeader
         month={month}
         title="Overview"
-        subtitle={`${summary.expenseCount} transactions this month`}
+        subtitle={`${name} · ${summary.expenseCount} transactions this month`}
         actions={<DownloadReportButton month={month} />}
       />
 
@@ -157,7 +161,7 @@ async function DashboardContent({ month }: { month: string }) {
             Insights
           </h2>
           <p className="mt-0.5 text-sm text-[var(--text-muted)]">
-            AI-powered patterns from your spending
+            AI money-management advice for your ledger
           </p>
         </div>
         <InsightsList insights={insights} />

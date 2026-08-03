@@ -8,6 +8,7 @@ export interface Expense {
   expense_date: string;
   source: "telegram" | "web";
   telegram_user_id: number | null;
+  user_id?: string | null;
   created_at: string;
   updated_at: string;
 }

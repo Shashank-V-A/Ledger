@@ -9,6 +9,11 @@ import { format } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
+  const userId = request.headers.get("x-ledger-user-id");
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const month =
     request.nextUrl.searchParams.get("month") ??
     format(new Date(), "yyyy-MM");
@@ -19,9 +24,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const [summary, previous, expenses] = await Promise.all([
-      getMonthlySummary(month),
-      getPreviousMonthSummary(month),
-      getExpenses({ month }),
+      getMonthlySummary(month, userId),
+      getPreviousMonthSummary(month, userId),
+      getExpenses({ month, userId }),
     ]);
 
     if (!expenses.length) {
