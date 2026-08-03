@@ -13,7 +13,7 @@ Personal expense tracker with a multi-user web dashboard, Telegram logging, AI i
 
 - **Per-user ledgers** — Telegram `/start` registers a private account
 - **Web password** — each user sets their own password to protect the dashboard
-- **8 categories** (Dining Out, Ordering In, Tea & Snacks, Investments, Entertainment, Fuel/Transport, Clothing, Misc)
+- **9 categories** (Dining Out, Ordering In, Tea & Snacks, Investments, Entertainment and Subscriptions, Gym and Fitness, Fuel/Transport, Clothing, Misc)
 - **Telegram bot** — amount → pick category → log
 - **Commands**: `today`, `this week`, `undo`, `password`, `help`
 - **Web dashboard** — charts, spent vs invested, category breakdowns, PDF download
