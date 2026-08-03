@@ -149,18 +149,47 @@ select.field {
   background-size: 1rem;
 }
 
+/* iOS Safari date/month inputs have a huge intrinsic min-width — clip + reset */
+.field-date-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
 input[type="date"].field,
 input[type="month"].field {
+  display: block;
   position: relative;
-  min-width: 0;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
   padding-right: 2.75rem;
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
 }
 
 .field-date {
   overflow: hidden;
+}
+
+input[type="date"].field::-webkit-datetime-edit,
+input[type="month"].field::-webkit-datetime-edit {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+input[type="date"].field::-webkit-date-and-time-value,
+input[type="month"].field::-webkit-date-and-time-value {
+  text-align: left;
+  min-width: 0;
 }
 
 input[type="date"].field::-webkit-calendar-picker-indicator,

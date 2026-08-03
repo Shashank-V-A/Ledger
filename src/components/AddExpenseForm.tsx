@@ -60,7 +60,7 @@ export function AddExpenseForm({ compact = false }: { compact?: boolean }) {
         />
       </div>
 
-      <div className={compact ? "" : "min-w-0 lg:col-span-2"}>
+      <div className={compact ? "field-date-wrap" : "field-date-wrap min-w-0 lg:col-span-2"}>
         {!compact && (
           <label className="mb-1.5 block text-xs font-medium text-[var(--text-muted)]">
             Date

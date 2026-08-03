@@ -113,7 +113,7 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
                     className="field"
                   />
                 </div>
-                <div>
+                <div className="field-date-wrap">
                   <label className="mb-1 block text-xs text-[var(--text-muted)]">Date</label>
                   <input
                     name="expense_date"
