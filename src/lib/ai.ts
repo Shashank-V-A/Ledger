@@ -6,7 +6,7 @@ import {
 import type { ParsedExpense } from "@/types";
 import OpenAI from "openai";
 
-const GROQ_MODEL = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+const GROQ_MODEL = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
 
 const groq = process.env.GROQ_API_KEY
   ? new OpenAI({
@@ -112,30 +112,38 @@ export async function parseExpenseText(text: string): Promise<ParsedExpense> {
     .map(([id, c]) => `- ${id}: ${c.label}`)
     .join("\n");
 
-  const response = await groq.chat.completions.create({
-    model: GROQ_MODEL,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR.\n\nRules:\n- food_small: tea, coffee, snacks\n- food_dining_out: restaurants, eating outside home\n- food_ordering_in: zomato, swiggy, delivery\n- entertainment: movies, games, concerts, streaming/subscriptions (netflix/spotify/prime), and recurring mobile/phone recharge (jio, airtel, prepaid, postpaid)\n- gym_fitness: gym membership, fitness, workout, yoga, protein, trainers\n- miscellaneous: hackathons, registrations, workshops, courses, exam fees, one-off fees, gifts, repairs, and anything that does not clearly fit another category`,
-      },
-      { role: "user", content: text },
-    ],
-  });
+  try {
+    const response = await groq.chat.completions.create({
+      model: GROQ_MODEL,
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `You parse Indian expense messages into JSON. Categories:\n${categoryList}\n\nReturn: {"amount": number, "category": "category_id", "description": "short label"}. Amount in INR.\n\nRules:\n- food_small: tea, coffee, snacks\n- food_dining_out: restaurants, eating outside home\n- food_ordering_in: zomato, swiggy, delivery\n- entertainment: movies, games, concerts, streaming/subscriptions (netflix/spotify/prime), and recurring mobile/phone recharge (jio, airtel, prepaid, postpaid)\n- gym_fitness: gym membership, fitness, workout, yoga, protein, trainers\n- miscellaneous: hackathons, registrations, workshops, courses, exam fees, one-off fees, gifts, repairs, and anything that does not clearly fit another category`,
+        },
+        { role: "user", content: text },
+      ],
+    });
 
-  const content = response.choices[0]?.message?.content;
-  if (!content) throw new Error("AI parsing failed");
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error("AI parsing failed");
 
-  const parsed = JSON.parse(content) as ParsedExpense;
-  if (!parsed.amount || parsed.amount <= 0) {
-    throw new Error("Could not detect a valid amount");
+    const parsed = JSON.parse(content) as ParsedExpense;
+    if (!parsed.amount || parsed.amount <= 0) {
+      throw new Error("Could not detect a valid amount");
+    }
+    if (!(parsed.category in CATEGORIES)) {
+      parsed.category = guessCategoryFromKeywords(text).category;
+    }
+    return parsed;
+  } catch {
+    if (ruleResult) {
+      const { matched: _, ...parsed } = ruleResult;
+      return parsed;
+    }
+    throw new Error("Could not parse expense. Try rephrasing the amount.");
   }
-  if (!(parsed.category in CATEGORIES)) {
-    parsed.category = guessCategoryFromKeywords(text).category;
-  }
-  return parsed;
 }
 
 export async function generateInsights(input: {
@@ -156,24 +164,24 @@ export async function generateInsights(input: {
     return buildFallbackInsights(input);
   }
 
-  const response = await groq.chat.completions.create({
-    model: GROQ_MODEL,
-    temperature: 0.3,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          'You are a practical money coach for an Indian user, not a reporting tool. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Generate 3-5 insights that help the user improve money management. Each insight must do at least one of these: identify a risky pattern, point out a healthy habit worth continuing, recommend a concrete next action, or suggest where to cut back with reasoning. Use specific numbers and categories from the input. Compare to the previous month when useful. If budgets are present, explicitly mention overruns or remaining headroom. Avoid bland summaries like "X was your top category" unless you immediately explain why it matters and what to do next. Keep each detail to 1-3 sentences. Use "Rs." for amounts (never the rupee symbol). Treat investments separately from spending and mention that distinction when relevant.',
-      },
-      { role: "user", content: JSON.stringify(input) },
-    ],
-  });
-
-  const content = response.choices[0]?.message?.content;
-  if (!content) return buildFallbackInsights(input);
-
   try {
+    const response = await groq.chat.completions.create({
+      model: GROQ_MODEL,
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            'You are a practical money coach for an Indian user, not a reporting tool. Return JSON: {"insights":[{"title":"...","detail":"...","type":"warning|positive|neutral"}]}. Generate 3-5 insights that help the user improve money management. Each insight must do at least one of these: identify a risky pattern, point out a healthy habit worth continuing, recommend a concrete next action, or suggest where to cut back with reasoning. Use specific numbers and categories from the input. Compare to the previous month when useful. If budgets are present, explicitly mention overruns or remaining headroom. Avoid bland summaries like "X was your top category" unless you immediately explain why it matters and what to do next. Keep each detail to 1-3 sentences. Use "Rs." for amounts (never the rupee symbol). Treat investments separately from spending and mention that distinction when relevant.',
+        },
+        { role: "user", content: JSON.stringify(input) },
+      ],
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) return buildFallbackInsights(input);
+
     const result = JSON.parse(content) as {
       insights: { title: string; detail: string; type: "warning" | "positive" | "neutral" }[];
     };
