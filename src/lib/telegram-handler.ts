@@ -21,6 +21,7 @@ import {
 } from "@/lib/telegram";
 import {
   getAppUrl,
+  getUserByTelegramId,
   refreshSetupToken,
   upsertUserFromTelegram,
   type LedgerUser,
@@ -54,6 +55,7 @@ type PendingExpense = {
 };
 
 const PENDING_TTL_MS = 15 * 60 * 1000;
+const USER_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const pendingByUser =
   (globalThis as unknown as { __ledgerPending?: Map<number, PendingExpense> })
@@ -62,6 +64,33 @@ const pendingByUser =
 (
   globalThis as unknown as { __ledgerPending?: Map<number, PendingExpense> }
 ).__ledgerPending = pendingByUser;
+
+const userCacheByTelegram =
+  (
+    globalThis as unknown as {
+      __ledgerUserCache?: Map<number, { user: LedgerUser; at: number }>;
+    }
+  ).__ledgerUserCache ?? new Map<number, { user: LedgerUser; at: number }>();
+
+(
+  globalThis as unknown as {
+    __ledgerUserCache?: Map<number, { user: LedgerUser; at: number }>;
+  }
+).__ledgerUserCache = userCacheByTelegram;
+
+function cacheLedgerUser(telegramUserId: number, user: LedgerUser) {
+  userCacheByTelegram.set(telegramUserId, { user, at: Date.now() });
+}
+
+function getCachedLedgerUser(telegramUserId: number): LedgerUser | null {
+  const hit = userCacheByTelegram.get(telegramUserId);
+  if (!hit) return null;
+  if (Date.now() - hit.at > USER_CACHE_TTL_MS) {
+    userCacheByTelegram.delete(telegramUserId);
+    return null;
+  }
+  return hit.user;
+}
 
 function setPending(
   telegramUserId: number,
@@ -116,12 +145,16 @@ function summarizeRange(
   return lines.join("\n");
 }
 
+/** Built once — category list does not change at runtime. */
+const CATEGORY_KEYBOARD: InlineKeyboard = {
+  inline_keyboard: [
+    ...CATEGORY_LIST.map((c) => [{ text: c.label, callback_data: `pick:${c.id}` }]),
+    [{ text: "✕ Cancel", callback_data: "cancel" }],
+  ],
+};
+
 function categoryPickKeyboard(): InlineKeyboard {
-  const rows: InlineKeyboard["inline_keyboard"] = CATEGORY_LIST.map((c) => [
-    { text: c.label, callback_data: `pick:${c.id}` },
-  ]);
-  rows.push([{ text: "✕ Cancel", callback_data: "cancel" }]);
-  return { inline_keyboard: rows };
+  return CATEGORY_KEYBOARD;
 }
 
 function chooseCategoryMessage(amount: number, description: string) {
@@ -153,17 +186,32 @@ Commands:
 
 Web dashboard needs your Login ID + password (from /start).`;
 
+/**
+ * Fast path for logging: read-only lookup. Only creates a user if missing
+ * (first message without /start). Avoids a DB write on every expense.
+ */
 async function resolveLedgerUser(from: {
   id: number;
   first_name?: string;
   username?: string;
 }): Promise<LedgerUser | null> {
   if (!isAllowedUser(from.id)) return null;
+
+  const cached = getCachedLedgerUser(from.id);
+  if (cached) return cached;
+
+  const existing = await getUserByTelegramId(from.id);
+  if (existing) {
+    cacheLedgerUser(from.id, existing);
+    return existing;
+  }
+
   const { user } = await upsertUserFromTelegram({
     telegramUserId: from.id,
     firstName: from.first_name,
     username: from.username,
   });
+  cacheLedgerUser(from.id, user);
   return user;
 }
 
@@ -227,16 +275,18 @@ async function handleCallbackQuery(
     return;
   }
 
-  const ledgerUser = await ensureLedgerUserOrReject(chatId, callback.from);
-  if (!ledgerUser) {
+  if (!isAllowedUser(telegramUserId)) {
     await answerCallbackQuery(callback.id, "Unauthorized");
     return;
   }
 
+  // Cancel: respond immediately — no DB needed
   if (data === "cancel") {
     clearPending(telegramUserId);
-    await answerCallbackQuery(callback.id, "Cancelled");
-    await editTelegramMessage(chatId, messageId, "✕ Cancelled — nothing logged");
+    await Promise.all([
+      answerCallbackQuery(callback.id, "Cancelled"),
+      editTelegramMessage(chatId, messageId, "✕ Cancelled — nothing logged"),
+    ]);
     return;
   }
 
@@ -247,41 +297,67 @@ async function handleCallbackQuery(
       return;
     }
 
+    // Pending lives in memory — validate before touching the DB
     const pending = getPending(telegramUserId);
-    if (!pending || pending.ledgerUserId !== ledgerUser.id) {
-      await answerCallbackQuery(callback.id, "Expired — send amount again");
-      await editTelegramMessage(
-        chatId,
-        messageId,
-        "⏱ Session expired. Send the amount again to log."
-      );
+    if (!pending) {
+      await Promise.all([
+        answerCallbackQuery(callback.id, "Expired — send amount again"),
+        editTelegramMessage(
+          chatId,
+          messageId,
+          "⏱ Session expired. Send the amount again to log."
+        ),
+      ]);
       return;
     }
 
-    const expense = await createExpense({
-      amount: pending.amount,
-      category,
-      description: pending.description,
-      source: "telegram",
-      telegram_user_id: telegramUserId,
-      userId: ledgerUser.id,
-    });
-
-    clearPending(telegramUserId);
+    // Ack the tap immediately so Telegram stops the loading spinner,
+    // then write the expense and update the message.
+    const expenseDate = format(new Date(), "yyyy-MM-dd");
     await answerCallbackQuery(
       callback.id,
       `Logged under ${getCategoryLabel(category)}`
     );
-    await editTelegramMessage(
-      chatId,
-      messageId,
-      loggedMessage(
-        pending.amount,
+
+    clearPending(telegramUserId);
+
+    try {
+      const expense = await createExpense({
+        amount: pending.amount,
         category,
-        pending.description,
-        expense.expense_date
-      )
-    );
+        description: pending.description,
+        expense_date: expenseDate,
+        source: "telegram",
+        telegram_user_id: telegramUserId,
+        userId: pending.ledgerUserId,
+      });
+
+      await editTelegramMessage(
+        chatId,
+        messageId,
+        loggedMessage(
+          pending.amount,
+          category,
+          pending.description,
+          expense.expense_date
+        )
+      );
+    } catch (err) {
+      // Put pending back so they can tap again if the write failed
+      setPending(telegramUserId, {
+        amount: pending.amount,
+        description: pending.description,
+        ledgerUserId: pending.ledgerUserId,
+      });
+      console.error("Telegram log expense failed:", err);
+      await editTelegramMessage(
+        chatId,
+        messageId,
+        chooseCategoryMessage(pending.amount, pending.description),
+        { reply_markup: categoryPickKeyboard() }
+      );
+      throw err;
+    }
     return;
   }
 
@@ -316,6 +392,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
       firstName: message.from.first_name,
       username: message.from.username,
     });
+    cacheLedgerUser(telegramUserId, user);
     // Ensure a setup token if password not set
     if (!user.password_hash && !user.setup_token) {
       await refreshSetupToken(user.id);
@@ -324,6 +401,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate): Promise<void
         firstName: message.from.first_name,
         username: message.from.username,
       });
+      cacheLedgerUser(telegramUserId, refreshed.user);
       await sendTelegramMessage(chatId, startMessage(refreshed.user, created));
       return;
     }
